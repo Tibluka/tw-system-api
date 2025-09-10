@@ -1,4 +1,5 @@
 // Validações básicas (sem Joi por enquanto)
+const { body } = require('express-validator');
 
 const validateLogin = (req, res, next) => {
   const { email, password } = req.body;
@@ -228,6 +229,206 @@ const generateStrongPassword = () => {
   return password.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
+const validateCNPJ = (cnpj) => {
+  cnpj = cnpj.replace(/[^\d]/g, '');
+  
+  if (cnpj.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(cnpj)) return false; // CNPJs com todos os dígitos iguais são inválidos
+  
+  // Validação dos dígitos verificadores
+  let soma = 0;
+  let peso = 2;
+  
+  // Primeiro dígito verificador
+  for (let i = 11; i >= 0; i--) {
+    soma += parseInt(cnpj.charAt(i)) * peso;
+    peso = peso === 9 ? 2 : peso + 1;
+  }
+  
+  let digito1 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  if (parseInt(cnpj.charAt(12)) !== digito1) return false;
+  
+  // Segundo dígito verificador
+  soma = 0;
+  peso = 2;
+  
+  for (let i = 12; i >= 0; i--) {
+    soma += parseInt(cnpj.charAt(i)) * peso;
+    peso = peso === 9 ? 2 : peso + 1;
+  }
+  
+  let digito2 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  return parseInt(cnpj.charAt(13)) === digito2;
+};
+
+// Validações para clientes
+const validateCreateClient = [
+  body('razaoSocial')
+    .notEmpty()
+    .withMessage('Razão social é obrigatória')
+    .isLength({ min: 2, max: 200 })
+    .withMessage('Razão social deve ter entre 2 e 200 caracteres')
+    .trim(),
+
+  body('cnpj')
+    .notEmpty()
+    .withMessage('CNPJ é obrigatório')
+    .custom((value) => {
+      if (!validateCNPJ(value)) {
+        throw new Error('CNPJ inválido');
+      }
+      return true;
+    }),
+
+  body('contato.telefone')
+    .notEmpty()
+    .withMessage('Telefone é obrigatório')
+    .matches(/^[\d\s\(\)\-\+]+$/)
+    .withMessage('Formato de telefone inválido'),
+
+  body('contato.email')
+    .notEmpty()
+    .withMessage('Email é obrigatório')
+    .isEmail()
+    .withMessage('Email deve ter formato válido')
+    .normalizeEmail(),
+
+  body('endereco.logradouro')
+    .notEmpty()
+    .withMessage('Logradouro é obrigatório')
+    .trim(),
+
+  body('endereco.numero')
+    .notEmpty()
+    .withMessage('Número é obrigatório')
+    .trim(),
+
+  body('endereco.complemento')
+    .optional()
+    .trim(),
+
+  body('endereco.bairro')
+    .notEmpty()
+    .withMessage('Bairro é obrigatório')
+    .trim(),
+
+  body('endereco.cidade')
+    .notEmpty()
+    .withMessage('Cidade é obrigatória')
+    .trim(),
+
+  body('endereco.estado')
+    .notEmpty()
+    .withMessage('Estado é obrigatório')
+    .isLength({ min: 2, max: 2 })
+    .withMessage('Estado deve ter 2 caracteres')
+    .trim(),
+
+  body('endereco.cep')
+    .notEmpty()
+    .withMessage('CEP é obrigatório')
+    .matches(/^\d{5}-?\d{3}$/)
+    .withMessage('CEP deve ter formato válido (12345-678)'),
+
+  body('valores.valorPorMetro')
+    .notEmpty()
+    .withMessage('Valor por metro é obrigatório')
+    .isFloat({ min: 0 })
+    .withMessage('Valor por metro deve ser um número positivo'),
+
+  body('valores.valorPorPeca')
+    .notEmpty()
+    .withMessage('Valor por peça é obrigatório')
+    .isFloat({ min: 0 })
+    .withMessage('Valor por peça deve ser um número positivo'),
+
+  body('ativo')
+    .optional()
+    .isBoolean()
+    .withMessage('Campo ativo deve ser verdadeiro ou falso')
+];
+
+const validateUpdateClient = [
+  body('razaoSocial')
+    .optional()
+    .isLength({ min: 2, max: 200 })
+    .withMessage('Razão social deve ter entre 2 e 200 caracteres')
+    .trim(),
+
+  body('cnpj')
+    .optional()
+    .custom((value) => {
+      if (value && !validateCNPJ(value)) {
+        throw new Error('CNPJ inválido');
+      }
+      return true;
+    }),
+
+  body('contato.telefone')
+    .optional()
+    .matches(/^[\d\s\(\)\-\+]+$/)
+    .withMessage('Formato de telefone inválido'),
+
+  body('contato.email')
+    .optional()
+    .isEmail()
+    .withMessage('Email deve ter formato válido')
+    .normalizeEmail(),
+
+  body('endereco.logradouro')
+    .optional()
+    .notEmpty()
+    .withMessage('Logradouro não pode ser vazio')
+    .trim(),
+
+  body('endereco.numero')
+    .optional()
+    .notEmpty()
+    .withMessage('Número não pode ser vazio')
+    .trim(),
+
+  body('endereco.complemento')
+    .optional()
+    .trim(),
+
+  body('endereco.bairro')
+    .optional()
+    .notEmpty()
+    .withMessage('Bairro não pode ser vazio')
+    .trim(),
+
+  body('endereco.cidade')
+    .optional()
+    .notEmpty()
+    .withMessage('Cidade não pode ser vazia')
+    .trim(),
+
+  body('endereco.estado')
+    .optional()
+    .isLength({ min: 2, max: 2 })
+    .withMessage('Estado deve ter 2 caracteres')
+    .trim(),
+
+  body('endereco.cep')
+    .optional()
+    .matches(/^\d{5}-?\d{3}$/)
+    .withMessage('CEP deve ter formato válido (12345-678)'),
+
+  body('valores.valorPorMetro')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Valor por metro deve ser um número positivo'),
+
+  body('valores.valorPorPeca')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Valor por peça deve ser um número positivo'),
+
+  body('ativo')
+    .optional()
+    .isBoolean()
+    .withMessage('Campo ativo deve ser verdadeiro ou falso')
+];
 
 module.exports = {
   validateLogin,
@@ -238,5 +439,8 @@ module.exports = {
   validatePasswordChange,
   validatePagination,
   generateStrongPassword,
-  validateCreateUser
+  validateCreateUser,
+  validateCNPJ,
+  validateUpdateClient,
+  validateCreateClient
 };

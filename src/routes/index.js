@@ -15,7 +15,8 @@ router.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       auth: '/auth',
-      users: '/users'
+      users: '/users',
+      clients: '/clients'
     }
   });
 });

@@ -1,0 +1,26 @@
+const express = require('express');
+const router = express.Router();
+const clientController = require('../controllers/clientController');
+
+// GET /api/v1/clients/stats - Estatísticas (deve vir antes de /:id)
+router.get('/stats', clientController.stats);
+
+// GET /api/v1/clients - Listar todos os clientes
+router.get('/', clientController.index);
+
+// GET /api/v1/clients/:id - Buscar cliente por ID
+router.get('/:id', clientController.show);
+
+// POST /api/v1/clients - Criar novo cliente
+router.post('/', validateCreateClient, clientController.store);
+
+// PUT /api/v1/clients/:id - Atualizar cliente
+router.put('/:id', validateUpdateClient, clientController.update);
+
+// DELETE /api/v1/clients/:id - Desativar cliente (soft delete)
+router.delete('/:id', clientController.destroy);
+
+// POST /api/v1/clients/:id/activate - Reativar cliente
+router.post('/:id/activate', clientController.activate);
+
+module.exports = router;
