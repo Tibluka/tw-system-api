@@ -15,10 +15,11 @@ class EmailService {
     }
 
     try {
-      this.transporter = nodemailer.createTransporter({
+      // CORREÇÃO: createTransport ao invés de createTransporter
+      this.transporter = nodemailer.createTransport({
         host: config.SMTP_HOST,
         port: config.SMTP_PORT,
-        secure: config.SMTP_PORT === 465, // true for 465, false for other ports
+        secure: config.SMTP_PORT === 465,
         auth: {
           user: config.SMTP_USER,
           pass: config.SMTP_PASS,
@@ -28,7 +29,6 @@ class EmailService {
         }
       });
 
-      // Verificar conexão
       this.transporter.verify((error, success) => {
         if (error) {
           logger.error('Erro na configuração do email:', error);
@@ -96,14 +96,6 @@ class EmailService {
     return await this.sendEmail({ to: email, subject, html, text });
   }
 
-  async sendPasswordChanged(email, name) {
-    const subject = 'Senha alterada com sucesso';
-    const html = this.getPasswordChangedTemplate(name);
-    const text = `Olá ${name}! Sua senha foi alterada com sucesso.`;
-
-    return await this.sendEmail({ to: email, subject, html, text });
-  }
-
   getWelcomeTemplate(name) {
     return `
       <!DOCTYPE html>
@@ -161,9 +153,7 @@ class EmailService {
             <h2>Olá ${name}!</h2>
             <p>Por favor, clique no botão abaixo para confirmar seu endereço de email:</p>
             <a href="${verificationUrl}" class="button">Confirmar Email</a>
-            <p>Este link é válido por 24 horas. Se você não solicitou esta verificação, ignore este email.</p>
-            <p>Se o botão não funcionar, copie e cole este link no seu navegador:</p>
-            <p style="word-break: break-all;">${verificationUrl}</p>
+            <p>Este link é válido por 24 horas.</p>
           </div>
           <div class="footer">
             <p>© ${new Date().getFullYear()} ${config.FROM_NAME}. Todos os direitos reservados.</p>
@@ -199,42 +189,6 @@ class EmailService {
             <p>Você solicitou a recuperação da sua senha. Clique no botão abaixo para criar uma nova senha:</p>
             <a href="${resetUrl}" class="button">Redefinir Senha</a>
             <p>Este link é válido por apenas 10 minutos por motivos de segurança.</p>
-            <p>Se você não solicitou esta recuperação, ignore este email. Sua senha permanecerá inalterada.</p>
-            <p>Se o botão não funcionar, copie e cole este link no seu navegador:</p>
-            <p style="word-break: break-all;">${resetUrl}</p>
-          </div>
-          <div class="footer">
-            <p>© ${new Date().getFullYear()} ${config.FROM_NAME}. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  getPasswordChangedTemplate(name) {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #17a2b8; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background: #f9f9f9; }
-          .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Senha Alterada</h1>
-          </div>
-          <div class="content">
-            <h2>Olá ${name}!</h2>
-            <p>Sua senha foi alterada com sucesso em ${new Date().toLocaleString('pt-BR')}.</p>
-            <p>Se você não fez esta alteração, entre em contato conosco imediatamente.</p>
           </div>
           <div class="footer">
             <p>© ${new Date().getFullYear()} ${config.FROM_NAME}. Todos os direitos reservados.</p>
@@ -246,5 +200,4 @@ class EmailService {
   }
 }
 
-// Exportar instância única
 module.exports = new EmailService();

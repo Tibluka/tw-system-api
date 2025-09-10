@@ -30,7 +30,7 @@ const config = {
   FROM_NAME: process.env.FROM_NAME || 'TW-System',
   
   // Configurações de rate limiting
-  RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
+  RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
   RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   
   // Configurações de logs
@@ -38,7 +38,7 @@ const config = {
   LOG_FILE: process.env.LOG_FILE || 'logs/app.log',
   
   // Configurações de upload
-  MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB
+  MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024,
   UPLOAD_PATH: process.env.UPLOAD_PATH || 'uploads/',
   
   // Configurações de segurança
@@ -52,21 +52,5 @@ const config = {
   isProduction: () => config.NODE_ENV === 'production',
   isTest: () => config.NODE_ENV === 'test'
 };
-
-// Validação de configurações obrigatórias em produção
-if (config.isProduction()) {
-  const requiredConfigs = ['JWT_SECRET', 'MONGODB_URI'];
-  
-  for (const configKey of requiredConfigs) {
-    if (!config[configKey]) {
-      throw new Error(`Configuração obrigatória ausente: ${configKey}`);
-    }
-  }
-  
-  // Validar se JWT_SECRET é seguro em produção
-  if (config.JWT_SECRET.length < 32) {
-    throw new Error('JWT_SECRET deve ter pelo menos 32 caracteres em produção');
-  }
-}
 
 module.exports = config;

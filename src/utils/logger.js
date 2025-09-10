@@ -1,8 +1,13 @@
 const winston = require('winston');
 const path = require('path');
-const config = require('../config/env');
+const fs = require('fs');
 
-// Formato personalizado para logs
+// Criar diretório de logs se não existir
+const logsDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
 const customFormat = winston.format.combine(
   winston.format.timestamp({
     format: 'YYYY-MM-DD HH:mm:ss'
@@ -12,7 +17,6 @@ const customFormat = winston.format.combine(
   winston.format.prettyPrint()
 );
 
-// Formato para console (desenvolvimento)
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({
@@ -23,51 +27,46 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// Configuração dos transports
 const transports = [];
 
-// Console transport (sempre ativo)
 transports.push(
   new winston.transports.Console({
     format: consoleFormat,
-    level: config.isDevelopment() ? 'debug' : config.LOG_LEVEL
+    level: 'debug'
   })
 );
 
-// File transports (apenas em produção)
-if (config.isProduction()) {
-  // Log geral
+// File transports apenas em produção
+const NODE_ENV = process.env.NODE_ENV || 'development';
+if (NODE_ENV === 'production') {
   transports.push(
     new winston.transports.File({
-      filename: path.join(process.cwd(), 'logs', 'app.log'),
+      filename: path.join(logsDir, 'app.log'),
       format: customFormat,
-      level: config.LOG_LEVEL,
-      maxsize: 5242880, // 5MB
+      level: 'info',
+      maxsize: 5242880,
       maxFiles: 5,
     })
   );
 
-  // Log de erros
   transports.push(
     new winston.transports.File({
-      filename: path.join(process.cwd(), 'logs', 'error.log'),
+      filename: path.join(logsDir, 'error.log'),
       format: customFormat,
       level: 'error',
-      maxsize: 5242880, // 5MB
+      maxsize: 5242880,
       maxFiles: 5,
     })
   );
 }
 
-// Criar o logger
 const logger = winston.createLogger({
-  level: config.LOG_LEVEL,
+  level: 'info',
   format: customFormat,
   transports,
   exitOnError: false
 });
 
-// Stream para Morgan (HTTP logs)
 logger.stream = {
   write: (message) => {
     logger.info(message.trim());

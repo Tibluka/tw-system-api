@@ -8,7 +8,7 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 Servidor rodando na porta ${PORT}`);
   logger.info(`🌍 Ambiente: ${config.NODE_ENV}`);
   logger.info(`📝 Health check: http://localhost:${PORT}/health`);
-  logger.info(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
+  logger.info(`📚 API Docs: http://localhost:${PORT}/api/v1`);
 });
 
 // Graceful shutdown
