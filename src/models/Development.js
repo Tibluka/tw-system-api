@@ -35,8 +35,8 @@ const developmentSchema = new mongoose.Schema({
   // STATUS
   status: {
     type: String,
-    enum: ['started', 'impediment', 'awaiting_approval', 'approved', 'refused'],
-    default: 'started'
+    enum: ['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'],
+    default: 'CREATED'
   },
   // VARIANTS
   variants: {
@@ -177,11 +177,10 @@ developmentSchema.pre('save', function(next) {
 // Method to get formatted status
 developmentSchema.methods.getFormattedStatus = function() {
   const statusMap = {
-    'started': 'Iniciado',
-    'impediment': 'Impedimento',
-    'awaiting_approval': 'Aguardando Aprovação',
-    'approved': 'Aprovado',
-    'refused': 'Recusado'
+    'CREATED': 'Criado',
+    'AWAITING_APPROVAL': 'Aguardando Aprovação',
+    'APPROVED': 'Aprovado',
+    'CANCELED': 'Cancelado'
   };
   return statusMap[this.status] || this.status;
 };
@@ -210,7 +209,6 @@ developmentSchema.statics.getStatistics = async function() {
   const result = {
     total: 0,
     started: 0,
-    impediment: 0,
     awaiting_approval: 0,
     approved: 0,
     refused: 0

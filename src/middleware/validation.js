@@ -484,8 +484,8 @@ const validateCreateDevelopment = [
 
   body('status')
     .optional()
-    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
-    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
+    .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'])
+    .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED'),
 
   body('active')
     .optional()
@@ -566,9 +566,8 @@ const validateUpdateDevelopment = [
 
   body('status')
     .optional()
-    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
-    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
-
+    .isIn('CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED')
+    .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED'),
   body('active')
     .optional()
     .isBoolean()
@@ -625,9 +624,9 @@ const validateStatusUpdate = [
   body('status')
     .notEmpty()
     .withMessage('Status is required')
-    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
-    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused')
-];
+    .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'])
+    .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED')
+  ];
 
 module.exports = {
   validateLogin,

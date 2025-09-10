@@ -64,7 +64,6 @@ router.get('/by-client/:clientId',
 // @desc    Get development by ID
 // @access  Private
 router.get('/:id', 
-  validateObjectId, 
   developmentController.show
 );
 
@@ -83,7 +82,6 @@ router.post('/',
 router.put('/:id', 
   validateObjectId,
   validateUpdateDevelopment,
-  validateProductionType,
   developmentController.update
 );
 
