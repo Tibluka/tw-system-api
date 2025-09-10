@@ -410,6 +410,225 @@ const validateUpdateClient = [
     .withMessage('Campo active deve ser verdadeiro ou falso')
 ];
 
+const validateCreateDevelopment = [
+  body('clientId')
+    .notEmpty()
+    .withMessage('Client ID is required')
+    .isMongoId()
+    .withMessage('Client ID must be a valid MongoDB ObjectId'),
+
+  body('description')
+    .notEmpty()
+    .withMessage('Description is required')
+    .isLength({ min: 10, max: 500 })
+    .withMessage('Description must be between 10 and 500 characters')
+    .trim(),
+
+  body('clientReference')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Client reference must have maximum 100 characters')
+    .trim(),
+
+  body('pieceImage')
+    .optional()
+    .isURL()
+    .withMessage('Piece image must be a valid URL'),
+
+  body('variants.color')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Color must have maximum 50 characters')
+    .trim(),
+
+  // Production Type Validations
+  body('productionType.rotary.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Rotary enabled must be a boolean'),
+
+  body('productionType.rotary.negotiatedPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Negotiated price must be a positive number'),
+
+  body('productionType.localized.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Localized enabled must be a boolean'),
+
+  body('productionType.localized.sizes.xs')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XS size must be a positive integer'),
+
+  body('productionType.localized.sizes.s')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('S size must be a positive integer'),
+
+  body('productionType.localized.sizes.m')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('M size must be a positive integer'),
+
+  body('productionType.localized.sizes.l')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('L size must be a positive integer'),
+
+  body('productionType.localized.sizes.xl')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XL size must be a positive integer'),
+
+  body('status')
+    .optional()
+    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
+    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validations for updating development
+const validateUpdateDevelopment = [
+  body('clientId')
+    .optional()
+    .isMongoId()
+    .withMessage('Client ID must be a valid MongoDB ObjectId'),
+
+  body('description')
+    .optional()
+    .isLength({ min: 10, max: 500 })
+    .withMessage('Description must be between 10 and 500 characters')
+    .trim(),
+
+  body('clientReference')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Client reference must have maximum 100 characters')
+    .trim(),
+
+  body('pieceImage')
+    .optional()
+    .isURL()
+    .withMessage('Piece image must be a valid URL'),
+
+  body('variants.color')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Color must have maximum 50 characters')
+    .trim(),
+
+  // Production Type Validations
+  body('productionType.rotary.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Rotary enabled must be a boolean'),
+
+  body('productionType.rotary.negotiatedPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Negotiated price must be a positive number'),
+
+  body('productionType.localized.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Localized enabled must be a boolean'),
+
+  body('productionType.localized.sizes.xs')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XS size must be a positive integer'),
+
+  body('productionType.localized.sizes.s')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('S size must be a positive integer'),
+
+  body('productionType.localized.sizes.m')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('M size must be a positive integer'),
+
+  body('productionType.localized.sizes.l')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('L size must be a positive integer'),
+
+  body('productionType.localized.sizes.xl')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XL size must be a positive integer'),
+
+  body('status')
+    .optional()
+    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
+    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Custom validation middleware for production type
+const validateProductionType = (req, res, next) => {
+  const { productionType } = req.body;
+  
+  if (!productionType) {
+    return res.status(400).json({
+      success: false,
+      message: 'Production type is required'
+    });
+  }
+  
+  const { rotary, localized } = productionType;
+  
+  // At least one production type must be enabled
+  if (!rotary?.enabled && !localized?.enabled) {
+    return res.status(400).json({
+      success: false,
+      message: 'At least one production type must be enabled'
+    });
+  }
+  
+  // If rotary is enabled, negotiatedPrice is required
+  if (rotary?.enabled && !rotary.negotiatedPrice) {
+    return res.status(400).json({
+      success: false,
+      message: 'Negotiated price is required when rotary production is enabled'
+    });
+  }
+  
+  // If localized is enabled, at least one size must be greater than 0
+  if (localized?.enabled) {
+    const sizes = localized.sizes;
+    const hasValidSizes = sizes && Object.values(sizes).some(size => size > 0);
+    
+    if (!hasValidSizes) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one size quantity must be greater than 0 when localized production is enabled'
+      });
+    }
+  }
+  
+  next();
+};
+
+// Validation for status update
+const validateStatusUpdate = [
+  body('status')
+    .notEmpty()
+    .withMessage('Status is required')
+    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
+    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused')
+];
+
 module.exports = {
   validateLogin,
   validateRegister,
@@ -422,5 +641,9 @@ module.exports = {
   validateCreateUser,
   validateCNPJ,
   validateUpdateClient,
-  validateCreateClient
+  validateCreateClient,
+  validateStatusUpdate,
+  validateProductionType,
+  validateUpdateDevelopment,
+  validateCreateDevelopment
 };

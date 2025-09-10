@@ -3,6 +3,7 @@ const authRoutes = require('./auth');
 const userRoutes = require('./users');
 const healthRoutes = require('./health');
 const clientRoutes = require('./clients');
+const developmentRoutes = require('./developments');
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/clients', clientRoutes);
+router.use('/developments', developmentRoutes);
 
 module.exports = router;
