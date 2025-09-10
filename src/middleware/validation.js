@@ -54,6 +54,33 @@ const validateRegister = (req, res, next) => {
   next();
 };
 
+const validateCreateUser = (req, res, next) => {
+  const { name, email, role } = req.body;
+  
+  if (!name || !email || !role) {
+    return res.status(400).json({
+      success: false,
+      message: 'Nome, email e função são obrigatórios'
+    });
+  }
+  
+  if (name.length < 2 || name.length > 50) {
+    return res.status(400).json({
+      success: false,
+      message: 'Nome deve ter entre 2 e 50 caracteres'
+    });
+  }
+  
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email inválido'
+    });
+  }
+  
+  next();
+};
+
 const validateUpdateUser = (req, res, next) => {
   const { name, email, role } = req.body;
   
@@ -79,7 +106,7 @@ const validateUpdateUser = (req, res, next) => {
   
   // Validar role se fornecido
   if (role !== undefined) {
-    const validRoles = ['user', 'admin', 'moderator'];
+    const validRoles = ['user', 'ADMIN', 'moderator'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
@@ -181,6 +208,27 @@ const validatePagination = (req, res, next) => {
   next();
 };
 
+const generateStrongPassword = () => {
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const specials = '!@#$%&*()=';
+  let password = '';
+  // Garantir pelo menos um de cada
+  password += upper[Math.floor(Math.random() * upper.length)];
+  password += lower[Math.floor(Math.random() * lower.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += specials[Math.floor(Math.random() * specials.length)];
+  // Preencher o restante aleatoriamente
+  const all = upper + lower + numbers + specials;
+  for (let i = 4; i < 6; i++) {
+    password += all[Math.floor(Math.random() * all.length)];
+  }
+  // Embaralhar para não ficar previsível
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
+}
+
+
 module.exports = {
   validateLogin,
   validateRegister,
@@ -188,5 +236,7 @@ module.exports = {
   validateChangePassword,
   validateObjectId,
   validatePasswordChange,
-  validatePagination
+  validatePagination,
+  generateStrongPassword,
+  validateCreateUser
 };

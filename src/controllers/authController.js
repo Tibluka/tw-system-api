@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 // @access  Public
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Verificar se o usuário já existe
     const existingUser = await User.findByEmail(email);
@@ -20,12 +20,9 @@ const register = async (req, res, next) => {
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      role
     });
-
-    // Gerar tokens
-    const accessToken = user.generateAuthToken();
-    const refreshToken = user.generateRefreshToken();
 
     // Log da atividade
     logger.info(`Novo usuário registrado: ${email}`);
@@ -34,9 +31,7 @@ const register = async (req, res, next) => {
       success: true,
       message: 'Usuário registrado com sucesso',
       data: {
-        user: user.toJSON(),
-        accessToken,
-        refreshToken
+        user: user.toJSON()
       }
     });
   } catch (error) {

@@ -67,7 +67,7 @@ const authorizeOwnership = async (req, res, next) => {
   try {
     const userId = req.params.id || req.params.userId;
     
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'ADMIN') {
       return next();
     }
 

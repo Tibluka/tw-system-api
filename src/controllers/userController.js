@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
+const { generateStrongPassword } = require('../middleware/validation'); // Mudança aqui
 
 // @desc    Listar todos os usuários (paginado)
 // @route   GET /api/v1/users
@@ -92,7 +93,7 @@ const getUserById = async (req, res, next) => {
 // @access  Private (admin only)
 const createUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, role } = req.body;
 
     // Verificar se o usuário já existe
     const existingUser = await User.findByEmail(email);
@@ -100,19 +101,22 @@ const createUser = async (req, res, next) => {
       return next(new AppError('Email já está em uso', 400));
     }
 
+    const password = generateStrongPassword();
+
     // Criar novo usuário
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'user'
+      role
     });
 
     res.status(201).json({
       success: true,
       message: 'Usuário criado com sucesso',
       data: {
-        user: user.toJSON()
+        user: user.toJSON(),
+        senhaGerada: password // Retorna a senha gerada para o admin
       }
     });
 
@@ -131,11 +135,11 @@ const updateUser = async (req, res, next) => {
     const updates = req.body;
 
     // Campos que não podem ser atualizados por esta rota
-    const forbiddenFields = ['password', 'passwordResetToken', 'emailVerificationToken'];
+    const forbiddenFields = ['password', 'email', 'passwordResetToken', 'emailVerificationToken'];
     forbiddenFields.forEach(field => delete updates[field]);
 
     // Apenas admin pode alterar role e isActive
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'ADMIN') {
       delete updates.role;
       delete updates.isActive;
     }
@@ -313,7 +317,7 @@ const getUserStats = async (req, res, next) => {
             $sum: { $cond: [{ $eq: ['$isEmailVerified', true] }, 1, 0] }
           },
           adminUsers: {
-            $sum: { $cond: [{ $eq: ['$role', 'admin'] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ['$role', 'ADMIN'] }, 1, 0] }
           },
           regularUsers: {
             $sum: { $cond: [{ $eq: ['$role', 'user'] }, 1, 0] }
