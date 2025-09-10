@@ -46,7 +46,7 @@ const fileFormat = winston.format.combine(
 // Configurar transports
 const transports = [];
 
-// Console transport (sempre ativo)
+// Console transport (sempre active)
 transports.push(
   new winston.transports.Console({
     format: consoleFormat,

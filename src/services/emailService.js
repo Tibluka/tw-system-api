@@ -118,7 +118,7 @@ class EmailService {
           <div class="content">
             <h2>Olá ${name}!</h2>
             <p>Sua conta foi criada com sucesso. Agora você pode aproveitar todos os recursos da nossa plataforma.</p>
-            <p>Se você tiver alguma dúvida, não hesite em entrar em contato conosco.</p>
+            <p>Se você tiver alguma dúvida, não hesite em entrar em contact conosco.</p>
           </div>
           <div class="footer">
             <p>© ${new Date().getFullYear()} ${config.FROM_NAME}. Todos os direitos reservados.</p>

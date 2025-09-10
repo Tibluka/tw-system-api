@@ -230,40 +230,20 @@ const generateStrongPassword = () => {
 }
 
 const validateCNPJ = (cnpj) => {
-  cnpj = cnpj.replace(/[^\d]/g, '');
+  // Verificar se CNPJ foi fornecido
+  if (!cnpj) return false;
   
+  // Verificar se contém apenas números (não aceita . / -)
+  if (!/^\d+$/.test(cnpj)) return false;
+  
+  // Verificar se tem exatamente 14 dígitos
   if (cnpj.length !== 14) return false;
-  if (/^(\d)\1{13}$/.test(cnpj)) return false; // CNPJs com todos os dígitos iguais são inválidos
-  
-  // Validação dos dígitos verificadores
-  let soma = 0;
-  let peso = 2;
-  
-  // Primeiro dígito verificador
-  for (let i = 11; i >= 0; i--) {
-    soma += parseInt(cnpj.charAt(i)) * peso;
-    peso = peso === 9 ? 2 : peso + 1;
-  }
-  
-  let digito1 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
-  if (parseInt(cnpj.charAt(12)) !== digito1) return false;
-  
-  // Segundo dígito verificador
-  soma = 0;
-  peso = 2;
-  
-  for (let i = 12; i >= 0; i--) {
-    soma += parseInt(cnpj.charAt(i)) * peso;
-    peso = peso === 9 ? 2 : peso + 1;
-  }
-  
-  let digito2 = soma % 11 < 2 ? 0 : 11 - (soma % 11);
-  return parseInt(cnpj.charAt(13)) === digito2;
+  else return true;
 };
 
 // Validações para clientes
 const validateCreateClient = [
-  body('razaoSocial')
+  body('companyName')
     .notEmpty()
     .withMessage('Razão social é obrigatória')
     .isLength({ min: 2, max: 200 })
@@ -280,76 +260,76 @@ const validateCreateClient = [
       return true;
     }),
 
-  body('contato.telefone')
+  body('contact.phone')
     .notEmpty()
     .withMessage('Telefone é obrigatório')
     .matches(/^[\d\s\(\)\-\+]+$/)
-    .withMessage('Formato de telefone inválido'),
+    .withMessage('Formato de phone inválido'),
 
-  body('contato.email')
+  body('contact.email')
     .notEmpty()
     .withMessage('Email é obrigatório')
     .isEmail()
     .withMessage('Email deve ter formato válido')
     .normalizeEmail(),
 
-  body('endereco.logradouro')
+  body('address.street')
     .notEmpty()
     .withMessage('Logradouro é obrigatório')
     .trim(),
 
-  body('endereco.numero')
+  body('address.number')
     .notEmpty()
     .withMessage('Número é obrigatório')
     .trim(),
 
-  body('endereco.complemento')
+  body('address.complement')
     .optional()
     .trim(),
 
-  body('endereco.bairro')
+  body('address.neighborhood')
     .notEmpty()
     .withMessage('Bairro é obrigatório')
     .trim(),
 
-  body('endereco.cidade')
+  body('address.city')
     .notEmpty()
     .withMessage('Cidade é obrigatória')
     .trim(),
 
-  body('endereco.estado')
+  body('address.state')
     .notEmpty()
     .withMessage('Estado é obrigatório')
     .isLength({ min: 2, max: 2 })
     .withMessage('Estado deve ter 2 caracteres')
     .trim(),
 
-  body('endereco.cep')
+  body('address.zipcode')
     .notEmpty()
     .withMessage('CEP é obrigatório')
     .matches(/^\d{5}-?\d{3}$/)
     .withMessage('CEP deve ter formato válido (12345-678)'),
 
-  body('valores.valorPorMetro')
+  body('values.valuePerMeter')
     .notEmpty()
     .withMessage('Valor por metro é obrigatório')
     .isFloat({ min: 0 })
     .withMessage('Valor por metro deve ser um número positivo'),
 
-  body('valores.valorPorPeca')
+  body('values.valuePerPiece')
     .notEmpty()
     .withMessage('Valor por peça é obrigatório')
     .isFloat({ min: 0 })
     .withMessage('Valor por peça deve ser um número positivo'),
 
-  body('ativo')
+  body('active')
     .optional()
     .isBoolean()
-    .withMessage('Campo ativo deve ser verdadeiro ou falso')
+    .withMessage('Campo active deve ser verdadeiro ou falso')
 ];
 
 const validateUpdateClient = [
-  body('razaoSocial')
+  body('companyName')
     .optional()
     .isLength({ min: 2, max: 200 })
     .withMessage('Razão social deve ter entre 2 e 200 caracteres')
@@ -364,70 +344,70 @@ const validateUpdateClient = [
       return true;
     }),
 
-  body('contato.telefone')
+  body('contact.phone')
     .optional()
     .matches(/^[\d\s\(\)\-\+]+$/)
-    .withMessage('Formato de telefone inválido'),
+    .withMessage('Formato de phone inválido'),
 
-  body('contato.email')
+  body('contact.email')
     .optional()
     .isEmail()
     .withMessage('Email deve ter formato válido')
     .normalizeEmail(),
 
-  body('endereco.logradouro')
+  body('address.street')
     .optional()
     .notEmpty()
     .withMessage('Logradouro não pode ser vazio')
     .trim(),
 
-  body('endereco.numero')
+  body('address.number')
     .optional()
     .notEmpty()
     .withMessage('Número não pode ser vazio')
     .trim(),
 
-  body('endereco.complemento')
+  body('address.complement')
     .optional()
     .trim(),
 
-  body('endereco.bairro')
+  body('address.neighborhood')
     .optional()
     .notEmpty()
     .withMessage('Bairro não pode ser vazio')
     .trim(),
 
-  body('endereco.cidade')
+  body('address.city')
     .optional()
     .notEmpty()
     .withMessage('Cidade não pode ser vazia')
     .trim(),
 
-  body('endereco.estado')
+  body('address.state')
     .optional()
     .isLength({ min: 2, max: 2 })
     .withMessage('Estado deve ter 2 caracteres')
     .trim(),
 
-  body('endereco.cep')
+  body('address.zipcode')
     .optional()
     .matches(/^\d{5}-?\d{3}$/)
     .withMessage('CEP deve ter formato válido (12345-678)'),
 
-  body('valores.valorPorMetro')
+  body('values.valuePerMeter')
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Valor por metro deve ser um número positivo'),
 
-  body('valores.valorPorPeca')
+  body('values.valuePerPiece')
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Valor por peça deve ser um número positivo'),
 
-  body('ativo')
+  body('active')
     .optional()
     .isBoolean()
-    .withMessage('Campo ativo deve ser verdadeiro ou falso')
+    .withMessage('Campo active deve ser verdadeiro ou falso')
 ];
 
 module.exports = {

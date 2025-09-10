@@ -2,10 +2,16 @@ const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
 const { validateCreateClient, validateUpdateClient } = require('../middleware/validation');
+const { authenticate, authorize } = require('../middleware/auth'); // Assumindo que existe middleware de auth
 
+// Aplicar autenticação em todas as rotas
+router.use(authenticate);
 
 // GET /api/v1/clients/stats - Estatísticas (deve vir antes de /:id)
 router.get('/stats', clientController.stats);
+
+// GET /api/v1/clients/search - Busca avançada (deve vir antes de /:id)
+router.get('/search', clientController.search);
 
 // GET /api/v1/clients - Listar todos os clientes
 router.get('/', clientController.index);

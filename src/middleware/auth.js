@@ -24,7 +24,7 @@ const authenticate = async (req, res, next) => {
     }
 
     if (!currentUser.isActive) {
-      return next(new AppError('Sua conta foi desativada. Entre em contato com o suporte.', 401));
+      return next(new AppError('Sua conta foi desativada. Entre em contact com o suporte.', 401));
     }
 
     if (currentUser.isLocked) {

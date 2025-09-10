@@ -59,9 +59,9 @@ const login = async (req, res, next) => {
       return next(new AppError('Conta temporariamente bloqueada devido a muitas tentativas de login', 423));
     }
 
-    // Verificar se usuário está ativo
+    // Verificar se usuário está active
     if (!user.isActive) {
-      return next(new AppError('Conta desativada. Entre em contato com o suporte', 401));
+      return next(new AppError('Conta desativada. Entre em contact com o suporte', 401));
     }
 
     // Verificar senha
