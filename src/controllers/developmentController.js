@@ -12,7 +12,7 @@ class DevelopmentController {
         search = '', 
         status,
         clientId,
-        active,
+        active = true,
         sortBy = 'createdAt',
         order = 'desc'
       } = req.query;
@@ -35,9 +35,7 @@ class DevelopmentController {
       }
       
       // Filter by active status
-      if (active !== undefined) {
-        query.active = active === 'true';
-      }
+      query.active = active;
       
       // Text search
       if (search) {
@@ -92,12 +90,30 @@ class DevelopmentController {
     }
   }
 
-  // GET /developments/:id - Get development by ID
+  // GET /developments/:id - Get development by ID, internalReference or clientReference
   async show(req, res) {
     try {
       const { id } = req.params;
-      // Client será populado automaticamente pelo virtual populate
-      const development = await Development.findById(id);
+      let development = null;
+
+      // Tentar buscar por MongoDB ObjectId primeiro
+      if (id.match(/^[0-9a-fA-F]{24}$/)) {
+        development = await Development.findById(id);
+      }
+      
+      // Se não encontrou, tentar por internalReference
+      if (!development) {
+        development = await Development.findOne({ 
+          internalReference: id.toUpperCase()
+        });
+      }
+      
+      // Se ainda não encontrou, tentar por clientReference
+      if (!development) {
+        development = await Development.findOne({ 
+          clientReference: id 
+        });
+      }
 
       if (!development) {
         return res.status(404).json({
@@ -111,13 +127,6 @@ class DevelopmentController {
         data: development
       });
     } catch (error) {
-      if (error.name === 'CastError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid ID'
-        });
-      }
-
       res.status(500).json({
         success: false,
         message: 'Error fetching development',
@@ -305,7 +314,7 @@ class DevelopmentController {
         });
       }
 
-      const validStatuses = ['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'];
+      const validStatuses = ['started', 'impediment', 'awaiting_approval', 'approved', 'refused'];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
