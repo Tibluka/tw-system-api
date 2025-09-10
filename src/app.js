@@ -10,7 +10,7 @@ const config = require('./config/env');
 const corsConfig = require('./config/cors');
 const connectDB = require('./config/database');
 const routes = require('./routes');
-const { errorHandler } = require('./middleware/errorHandler'); // CORREÇÃO: Destructuring
+const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
 
 const app = express();

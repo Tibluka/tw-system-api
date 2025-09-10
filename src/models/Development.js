@@ -15,7 +15,12 @@ const developmentSchema = new mongoose.Schema({
     uppercase: true,
     maxlength: [20, 'Internal reference must have maximum 20 characters']
   },
-
+  // CLIENT REFERENCE (apenas a referência, sem duplicação)
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Client',
+    required: [true, 'Client is required']
+  },
   // BASIC DATA
   description: {
     type: String,
@@ -27,21 +32,12 @@ const developmentSchema = new mongoose.Schema({
     type: String, // Image URL
     trim: true
   },
-
-  // CLIENT (reference to Client)
-  clientId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Client',
-    required: [true, 'Client is required']
-  },
-
   // STATUS
   status: {
     type: String,
     enum: ['started', 'impediment', 'awaiting_approval', 'approved', 'refused'],
     default: 'started'
   },
-
   // VARIANTS
   variants: {
     color: {
@@ -50,7 +46,6 @@ const developmentSchema = new mongoose.Schema({
       maxlength: [50, 'Color must have maximum 50 characters']
     }
   },
-
   // PRODUCTION TYPE
   productionType: {
     rotary: {
@@ -87,14 +82,40 @@ const developmentSchema = new mongoose.Schema({
       }
     }
   },
-
   // CONTROL FIELDS
   active: {
     type: Boolean,
     default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  versionKey: false
+});
+
+// VIRTUAL POPULATE - sempre inclui dados do cliente automaticamente
+developmentSchema.virtual('client', {
+  ref: 'Client',
+  localField: 'clientId',
+  foreignField: '_id',
+  justOne: true
+});
+
+// Garantir que virtuals sejam incluídos no JSON e Object
+developmentSchema.set('toJSON', { 
+  virtuals: true,
+  versionKey: false 
+});
+developmentSchema.set('toObject', { 
+  virtuals: true,
+  versionKey: false 
+});
+
+// Middleware para sempre popular cliente automaticamente
+developmentSchema.pre(/^find/, function() {
+  this.populate({
+    path: 'client',
+    select: 'companyName cnpj contact values active'
+  });
 });
 
 // Generate internal reference before saving
@@ -104,7 +125,7 @@ developmentSchema.pre('save', async function(next) {
       // Get current year (last 2 digits)
       const year = new Date().getFullYear().toString().slice(-2);
       
-      // Get client initials (first 3 letters of company name)
+      // Get client data to generate reference
       const client = await mongoose.model('Client').findById(this.clientId);
       if (!client) {
         throw new Error('Client not found');

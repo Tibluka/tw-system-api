@@ -17,6 +17,11 @@ class DevelopmentController {
         order = 'desc'
       } = req.query;
 
+      // Validar e converter parâmetros de paginação
+      const pageNum = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+      const skip = (pageNum - 1) * limitNum;
+
       const query = {};
       
       // Filter by status
@@ -36,41 +41,53 @@ class DevelopmentController {
       
       // Text search
       if (search) {
+        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
         query.$or = [
-          { internalReference: { $regex: search, $options: 'i' } },
-          { clientReference: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
+          { internalReference: { $regex: searchRegex, $options: 'i' } },
+          { clientReference: { $regex: searchRegex, $options: 'i' } },
+          { description: { $regex: searchRegex, $options: 'i' } }
         ];
       }
 
-      const options = {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sortBy]: order === 'desc' ? -1 : 1 },
-        populate: {
-          path: 'clientId',
-          select: 'companyName cnpj contact.email'
-        }
-      };
+      // Configurar ordenação
+      const sortOrder = order === 'desc' ? -1 : 1;
+      const sortField = ['internalReference', 'description', 'status', 'createdAt', 'updatedAt'].includes(sortBy) ? sortBy : 'createdAt';
 
-      const developments = await Development.paginate(query, options);
+      // Buscar developments com paginação (client será populado automaticamente)
+      const [developments, totalCount] = await Promise.all([
+        Development.find(query)
+          .sort({ [sortField]: sortOrder })
+          .skip(skip)
+          .limit(limitNum)
+          .lean({ virtuals: true }), // Para incluir virtuals no lean
+        Development.countDocuments(query)
+      ]);
+
+      // Calcular informações de paginação
+      const totalPages = Math.ceil(totalCount / limitNum);
+      const hasNext = pageNum < totalPages;
+      const hasPrev = pageNum > 1;
       
       res.json({
         success: true,
-        data: developments.docs,
+        data: developments,
         pagination: {
-          currentPage: developments.page,
-          totalPages: developments.totalPages,
-          totalItems: developments.totalDocs,
-          hasNext: developments.hasNextPage,
-          hasPrev: developments.hasPrevPage
+          currentPage: pageNum,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limitNum,
+          hasNext,
+          hasPrev,
+          nextPage: hasNext ? pageNum + 1 : null,
+          prevPage: hasPrev ? pageNum - 1 : null
         }
       });
     } catch (error) {
+      console.error('Erro ao buscar developments:', error);
       res.status(500).json({
         success: false,
-        message: 'Error fetching developments',
-        error: error.message
+        message: 'Erro interno do servidor ao buscar developments',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
@@ -79,8 +96,8 @@ class DevelopmentController {
   async show(req, res) {
     try {
       const { id } = req.params;
-      const development = await Development.findById(id)
-        .populate('clientId', 'companyName cnpj contact address values');
+      // Client será populado automaticamente pelo virtual populate
+      const development = await Development.findById(id);
 
       if (!development) {
         return res.status(404).json({
@@ -115,7 +132,7 @@ class DevelopmentController {
       const { internalReference } = req.params;
       const development = await Development.findOne({ 
         internalReference: internalReference.toUpperCase() 
-      }).populate('clientId', 'companyName cnpj contact address values');
+      });
 
       if (!development) {
         return res.status(404).json({
@@ -162,13 +179,13 @@ class DevelopmentController {
       const development = new Development(req.body);
       await development.save();
 
-      // Populate client data in response
-      await development.populate('clientId', 'companyName cnpj contact');
+      // Buscar novamente para incluir os dados do cliente (virtual populate)
+      const developmentWithClient = await Development.findById(development._id);
 
       res.status(201).json({
         success: true,
         message: 'Development created successfully',
-        data: development
+        data: developmentWithClient
       });
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -214,7 +231,7 @@ class DevelopmentController {
         });
       }
 
-      // Verify client exists if clientId is being updated
+      // If clientId is being updated, verify client exists
       if (req.body.clientId) {
         const client = await Client.findById(req.body.clientId);
         if (!client) {
@@ -232,7 +249,7 @@ class DevelopmentController {
           new: true, 
           runValidators: true 
         }
-      ).populate('clientId', 'companyName cnpj contact');
+      );
 
       if (!development) {
         return res.status(404).json({
@@ -300,7 +317,7 @@ class DevelopmentController {
         id,
         { status },
         { new: true, runValidators: true }
-      ).populate('clientId', 'companyName cnpj contact');
+      );
 
       if (!development) {
         return res.status(404).json({
@@ -378,7 +395,7 @@ class DevelopmentController {
         id,
         { active: true },
         { new: true }
-      ).populate('clientId', 'companyName cnpj contact');
+      );
 
       if (!development) {
         return res.status(404).json({
@@ -432,7 +449,7 @@ class DevelopmentController {
       const { clientId } = req.params;
       const { status, active = true } = req.query;
 
-      const query = { clientId };
+      const query = { clientId: clientId };
       
       if (status) {
         query.status = status;
@@ -443,8 +460,7 @@ class DevelopmentController {
       }
 
       const developments = await Development.find(query)
-        .sort({ createdAt: -1 })
-        .populate('clientId', 'companyName');
+        .sort({ createdAt: -1 });
 
       res.json({
         success: true,
