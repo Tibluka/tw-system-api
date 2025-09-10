@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
+const { validateCreateClient, validateUpdateClient } = require('../middleware/validation');
+
 
 // GET /api/v1/clients/stats - Estatísticas (deve vir antes de /:id)
 router.get('/stats', clientController.stats);
