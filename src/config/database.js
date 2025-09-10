@@ -4,66 +4,43 @@ const logger = require('../utils/logger');
 
 const connectDB = async () => {
   try {
-    const mongoURI = config.isTest() ? config.MONGODB_TEST_URI : config.MONGODB_URI;
+    logger.info('🔗 Tentando conectar ao MongoDB Atlas...');
     
+    // Configurações mínimas necessárias
     const options = {
-      maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      bufferMaxEntries: 0,
-      bufferCommands: false,
     };
-
-    const conn = await mongoose.connect(mongoURI, options);
     
-    logger.info(`🍃 MongoDB conectado: ${conn.connection.host}`);
+    await mongoose.connect(config.MONGODB_URI, options);
     
-    mongoose.connection.on('connected', () => {
-      logger.info('Mongoose conectado ao MongoDB');
-    });
+    logger.info('🍃 MongoDB conectado com sucesso!');
+    logger.info(`📦 Database: ${mongoose.connection.name}`);
+    logger.info(`🏠 Host: ${mongoose.connection.host}`);
     
+    // Event listeners
     mongoose.connection.on('error', (err) => {
-      logger.error('Erro na conexão do Mongoose:', err);
+      logger.error('❌ Erro na conexão:', err.message);
     });
     
     mongoose.connection.on('disconnected', () => {
-      logger.warn('Mongoose desconectado');
-    });
-    
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      logger.info('Conexão do Mongoose fechada devido ao encerramento da aplicação');
-      process.exit(0);
+      logger.warn('⚠️ MongoDB desconectado');
     });
     
   } catch (error) {
-    logger.error('Erro ao conectar ao MongoDB:', error.message);
+    logger.error('❌ Erro ao conectar ao MongoDB:');
+    logger.error('📝 Mensagem:', error.message || 'Erro sem mensagem');
+    logger.error('🏷️ Nome:', error.name || 'Erro sem nome');
+    logger.error('🔢 Código:', error.code || 'Erro sem código');
     
+    // Em desenvolvimento, continuar tentando
     if (config.isDevelopment()) {
-      logger.info('Tentando reconectar em 5 segundos...');
-      setTimeout(connectDB, 5000);
+      logger.info('⏰ Tentando novamente em 10 segundos...');
+      setTimeout(connectDB, 10000);
     } else {
       process.exit(1);
     }
   }
-};
-
-const clearDB = async () => {
-  if (config.isTest()) {
-    const collections = mongoose.connection.collections;
-    for (const key in collections) {
-      const collection = collections[key];
-      await collection.deleteMany({});
-    }
-    logger.info('Banco de dados de teste limpo');
-  } else {
-    throw new Error('clearDB só pode ser executado em ambiente de teste');
-  }
-};
-
-const closeDB = async () => {
-  await mongoose.connection.close();
-  logger.info('Conexão com MongoDB fechada');
 };
 
 module.exports = connectDB;

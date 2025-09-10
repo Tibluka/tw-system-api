@@ -20,12 +20,13 @@ const userSchema = new mongoose.Schema({
       /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
       'Email inválido'
     ]
+    // REMOVIDO: index: true - para evitar duplicação
   },
   password: {
     type: String,
     required: [true, 'Senha é obrigatória'],
     minlength: [6, 'Senha deve ter pelo menos 6 caracteres'],
-    select: false // Não retornar senha por padrão
+    select: false
   },
   role: {
     type: String,
@@ -67,17 +68,14 @@ userSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
-// Índices
-userSchema.index({ email: 1 });
+// Índices (declarados apenas uma vez)
+userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ isActive: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Middleware para hash da senha antes de salvar
 userSchema.pre('save', async function(next) {
-  // Só executar se a senha foi modificada
   if (!this.isModified('password')) return next();
-
-  // Hash da senha com custo 12
   this.password = await bcrypt.hash(this.password, config.BCRYPT_ROUNDS);
   next();
 });
@@ -122,7 +120,6 @@ userSchema.methods.generateRefreshToken = function() {
 
 // Método para incrementar tentativas de login
 userSchema.methods.incLoginAttempts = function() {
-  // Se já passou do tempo de bloqueio, resetar tentativas
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return this.updateOne({
       $unset: { lockUntil: 1 },
@@ -132,7 +129,6 @@ userSchema.methods.incLoginAttempts = function() {
 
   const updates = { $inc: { loginAttempts: 1 } };
 
-  // Se atingiu o máximo de tentativas e não está bloqueado, bloquear
   if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
     updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 horas
   }
@@ -150,7 +146,7 @@ userSchema.methods.resetLoginAttempts = function() {
   });
 };
 
-// Método para serializar dados do usuário (remover dados sensíveis)
+// Método para serializar dados do usuário
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   
@@ -165,12 +161,11 @@ userSchema.methods.toJSON = function() {
   return userObject;
 };
 
-// Método estático para encontrar por email
+// Métodos estáticos
 userSchema.statics.findByEmail = function(email) {
   return this.findOne({ email: email.toLowerCase() });
 };
 
-// Método estático para encontrar usuário com senha
 userSchema.statics.findByEmailWithPassword = function(email) {
   return this.findOne({ email: email.toLowerCase() }).select('+password');
 };

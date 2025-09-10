@@ -10,7 +10,7 @@ const config = require('./config/env');
 const corsConfig = require('./config/cors');
 const connectDB = require('./config/database');
 const routes = require('./routes');
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler } = require('./middleware/errorHandler'); // CORREÇÃO: Destructuring
 const logger = require('./utils/logger');
 
 const app = express();
@@ -73,7 +73,7 @@ app.get('/', (req, res) => {
 });
 
 // Middleware de tratamento de erros (deve ser o último)
-app.use(errorHandler);
+app.use(errorHandler); // CORREÇÃO: Agora está correto
 
 // Middleware para rotas não encontradas
 app.use('*', (req, res) => {
