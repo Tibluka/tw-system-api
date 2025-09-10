@@ -15,8 +15,15 @@ router.get('/stats', authenticate, authorize('admin'), userController.getUserSta
 // @access  Private (admin only)
 router.get('/', authenticate, authorize('admin'), userController.getUsers);
 
+// OPÇÃO 1: Criar usuário SEM autenticação (público)
+// @route   POST /api/v1/users/public
+// @desc    Criar novo usuário (registro público)
+// @access  Public (sem token)
+router.post('/public', validateRegister, userController.createUser);
+
+// OPÇÃO 2: Criar usuário COM autenticação (admin only)
 // @route   POST /api/v1/users
-// @desc    Criar novo usuário
+// @desc    Criar novo usuário (admin apenas)
 // @access  Private (admin only)
 router.post('/', authenticate, authorize('admin'), validateRegister, userController.createUser);
 
