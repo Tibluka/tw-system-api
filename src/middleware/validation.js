@@ -921,6 +921,134 @@ const validateMachineAvailability = async (req, res, next) => {
   }
 };
 
+// ===== VALIDAÇÕES DO PRODUCTION RECEIPT =====
+
+// Validations for creating production receipt
+const validateCreateProductionReceipt = [
+  body('productionOrderId')
+    .notEmpty()
+    .withMessage('Production order ID is required')
+    .isMongoId()
+    .withMessage('Production order ID must be a valid MongoDB ObjectId'),
+
+  body('paymentMethod')
+    .notEmpty()
+    .withMessage('Payment method is required')
+    .isIn(['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PIX', 'CHECK'])
+    .withMessage('Payment method must be: CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, PIX, or CHECK'),
+
+  body('paymentStatus')
+    .optional()
+    .isIn(['PENDING', 'PAID'])
+    .withMessage('Payment status must be: PENDING or PAID'),
+
+  body('totalAmount')
+    .notEmpty()
+    .withMessage('Total amount is required')
+    .isFloat({ min: 0 })
+    .withMessage('Total amount must be a positive number'),
+
+  body('paidAmount')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Paid amount must be a positive number')
+    .custom((value, { req }) => {
+      if (value && req.body.totalAmount && value > parseFloat(req.body.totalAmount)) {
+        throw new Error('Paid amount cannot be greater than total amount');
+      }
+      return true;
+    }),
+
+  body('dueDate')
+    .notEmpty()
+    .withMessage('Due date is required')
+    .isISO8601()
+    .withMessage('Due date must be a valid date'),
+
+  body('notes')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Notes must have maximum 1000 characters')
+    .trim(),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validations for updating production receipt
+const validateUpdateProductionReceipt = [
+  body('productionOrderId')
+    .optional()
+    .isMongoId()
+    .withMessage('Production order ID must be a valid MongoDB ObjectId'),
+
+  body('paymentMethod')
+    .optional()
+    .isIn(['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'PIX', 'CHECK'])
+    .withMessage('Payment method must be: CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, PIX, or CHECK'),
+
+  body('paymentStatus')
+    .optional()
+    .isIn(['PENDING', 'PAID'])
+    .withMessage('Payment status must be: PENDING or PAID'),
+
+  body('totalAmount')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Total amount must be a positive number'),
+
+  body('paidAmount')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Paid amount must be a positive number'),
+
+  body('dueDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Due date must be a valid date'),
+
+  body('notes')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Notes must have maximum 1000 characters')
+    .trim(),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validation for payment status update
+const validatePaymentStatusUpdateProductionReceipt = [
+  body('paymentStatus')
+    .notEmpty()
+    .withMessage('Payment status is required')
+    .isIn(['PENDING', 'PAID'])
+    .withMessage('Payment status must be: PENDING or PAID'),
+
+  body('paymentDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Payment date must be a valid date')
+];
+
+// Validation for process payment
+const validateProcessPayment = [
+  body('amount')
+    .notEmpty()
+    .withMessage('Payment amount is required')
+    .isFloat({ min: 0.01 })
+    .withMessage('Payment amount must be greater than 0'),
+
+  body('paymentDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Payment date must be a valid date')
+];
+
 
 module.exports = {
   validateLogin,
@@ -946,5 +1074,9 @@ module.exports = {
   validateCreateProductionSheet,
   validateUpdateProductionSheet,
   validateStageUpdateProductionSheet,
-  validateMachineAvailability
+  validateMachineAvailability,
+  validateCreateProductionReceipt,
+  validateUpdateProductionReceipt,
+  validatePaymentStatusUpdateProductionReceipt,
+  validateProcessPayment
 };
