@@ -11,7 +11,6 @@ const productionOrderSchema = new mongoose.Schema({
   // DADOS COPIADOS (para não depender de populate)
   internalReference: {
     type: String,
-    required: [true, 'Internal reference is required'],
     trim: true,
     uppercase: true,
     maxlength: [20, 'Internal reference must have maximum 20 characters']
@@ -100,7 +99,7 @@ productionOrderSchema.pre('save', async function(next) {
       }
       
       // Verificar se development está aprovado
-      if (development.status !== 'approved') {
+      if (development.status !== 'APPROVED') {
         return next(new Error('Development must be approved to create production order'));
       }
       
@@ -144,7 +143,7 @@ productionOrderSchema.methods.canBeApproved = function() {
 
 // Method to check if can create production receipt
 productionOrderSchema.methods.canCreateProductionReceipt = function() {
-  return this.status === 'approved';
+  return this.status === 'APPROVED';
 };
 
 // Static method to get production order statistics

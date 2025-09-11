@@ -192,7 +192,7 @@ developmentSchema.methods.canBeApproved = function() {
 
 // Method to check if can create production order
 developmentSchema.methods.canCreateProductionOrder = function() {
-  return this.status === 'approved';
+  return this.status === 'APPROVED';
 };
 
 // Static method to get development statistics

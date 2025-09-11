@@ -568,7 +568,7 @@ const validateUpdateDevelopment = [
     .optional()
     .isIn('CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED')
     .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED'),
-    
+
   body('active')
     .optional()
     .isBoolean()
@@ -631,7 +631,6 @@ const validateStatusUpdate = [
 
 
   
-
 // Validations for creating production order
 const validateCreateProductionOrder = [
   body('developmentId')
@@ -664,9 +663,9 @@ const validateCreateProductionOrder = [
     .withMessage('Priority must be: green, yellow, or red'),
 
   body('status')
-  .optional()
-  .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'])
-  .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, or CLOSED'),
+    .optional()
+    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
+    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
 
   body('active')
     .optional()
@@ -703,10 +702,10 @@ const validateUpdateProductionOrder = [
     .isIn(['green', 'yellow', 'red'])
     .withMessage('Priority must be: green, yellow, or red'),
 
-    body('status')
+  body('status')
     .optional()
-    .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'])
-    .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, or CLOSED'),
+    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
+    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
 
   body('active')
     .optional()

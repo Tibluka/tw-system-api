@@ -162,7 +162,7 @@ class ProductionOrderController {
         });
       }
 
-      if (development.status !== 'approved') {
+      if (development.status !== 'APPROVED') {
         return res.status(400).json({
           success: false,
           message: 'Development must be approved to create production order'
@@ -240,7 +240,7 @@ class ProductionOrderController {
           });
         }
 
-        if (development.status !== 'approved') {
+        if (development.status !== 'APPROVED') {
           return res.status(400).json({
             success: false,
             message: 'Development must be approved'

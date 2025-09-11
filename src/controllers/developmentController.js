@@ -314,7 +314,7 @@ class DevelopmentController {
         });
       }
 
-      const validStatuses = ['started', 'impediment', 'awaiting_approval', 'approved', 'refused'];
+      const validStatuses = ['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
