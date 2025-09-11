@@ -568,6 +568,7 @@ const validateUpdateDevelopment = [
     .optional()
     .isIn('CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED')
     .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED'),
+    
   body('active')
     .optional()
     .isBoolean()
@@ -628,6 +629,109 @@ const validateStatusUpdate = [
     .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED')
   ];
 
+
+  
+
+// Validations for creating production order
+const validateCreateProductionOrder = [
+  body('developmentId')
+    .notEmpty()
+    .withMessage('Development ID is required')
+    .isMongoId()
+    .withMessage('Development ID must be a valid MongoDB ObjectId'),
+
+  body('fabricType')
+    .notEmpty()
+    .withMessage('Fabric type is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Fabric type must be between 2 and 100 characters')
+    .trim(),
+
+  body('pilot')
+    .optional()
+    .isBoolean()
+    .withMessage('Pilot must be a boolean'),
+
+  body('observations')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Observations must have maximum 1000 characters')
+    .trim(),
+
+  body('priority')
+    .optional()
+    .isIn(['green', 'yellow', 'red'])
+    .withMessage('Priority must be: green, yellow, or red'),
+
+  body('status')
+  .optional()
+  .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'])
+  .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, or CLOSED'),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validations for updating production order
+const validateUpdateProductionOrder = [
+  body('developmentId')
+    .optional()
+    .isMongoId()
+    .withMessage('Development ID must be a valid MongoDB ObjectId'),
+
+  body('fabricType')
+    .optional()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Fabric type must be between 2 and 100 characters')
+    .trim(),
+
+  body('pilot')
+    .optional()
+    .isBoolean()
+    .withMessage('Pilot must be a boolean'),
+
+  body('observations')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Observations must have maximum 1000 characters')
+    .trim(),
+
+  body('priority')
+    .optional()
+    .isIn(['green', 'yellow', 'red'])
+    .withMessage('Priority must be: green, yellow, or red'),
+
+    body('status')
+    .optional()
+    .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'])
+    .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, or CLOSED'),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validation for status update
+const validateStatusUpdateProductionOrder = [
+  body('status')
+    .notEmpty()
+    .withMessage('Status is required')
+    .isIn(['CREATED', 'PILOT_PRODUCTION', 'PILOT_SENT', 'PILOT_APPROVED', 'PRODUCTION_STARTED', 'FINALIZED'])
+    .withMessage('Status must be: CREATED, PILOT_PRODUCTION, PILOT_SENT, PILOT_APPROVED, PRODUCTION_STARTED, or FINALIZED')
+];
+
+// Validation for priority update
+const validatePriorityUpdateProductionOrder = [
+  body('priority')
+    .notEmpty()
+    .withMessage('Priority is required')
+    .isIn(['green', 'yellow', 'red'])
+    .withMessage('Priority must be: green, yellow, or red')
+];
+
 module.exports = {
   validateLogin,
   validateRegister,
@@ -644,5 +748,9 @@ module.exports = {
   validateStatusUpdate,
   validateProductionType,
   validateUpdateDevelopment,
-  validateCreateDevelopment
+  validateCreateDevelopment,
+  validateCreateProductionOrder,
+  validateUpdateProductionOrder,
+  validateStatusUpdateProductionOrder,
+  validatePriorityUpdateProductionOrder
 };
