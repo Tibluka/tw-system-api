@@ -629,8 +629,6 @@ const validateStatusUpdate = [
     .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED')
   ];
 
-
-  
 // Validations for creating production order
 const validateCreateProductionOrder = [
   body('developmentId')
@@ -731,6 +729,199 @@ const validatePriorityUpdateProductionOrder = [
     .withMessage('Priority must be: green, yellow, or red')
 ];
 
+
+// Validations for creating production sheet
+const validateCreateProductionSheet = [
+  body('productionOrderId')
+    .notEmpty()
+    .withMessage('Production order ID is required')
+    .isMongoId()
+    .withMessage('Production order ID must be a valid MongoDB ObjectId'),
+
+  // internalReference NÃO é obrigatório aqui - será copiado automaticamente da ProductionOrder
+
+  body('entryDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Entry date must be a valid date'),
+
+  body('expectedExitDate')
+    .notEmpty()
+    .withMessage('Expected exit date is required')
+    .isISO8601()
+    .withMessage('Expected exit date must be a valid date')
+    .custom((value, { req }) => {
+      // Verificar se expectedExitDate é posterior a entryDate
+      const entryDate = req.body.entryDate ? new Date(req.body.entryDate) : new Date();
+      const expectedExitDate = new Date(value);
+      
+      if (expectedExitDate <= entryDate) {
+        throw new Error('Expected exit date must be after entry date');
+      }
+      return true;
+    }),
+
+  body('machine')
+    .notEmpty()
+    .withMessage('Machine is required')
+    .isInt({ min: 1, max: 4 })
+    .withMessage('Machine must be 1, 2, 3, or 4'),
+
+  body('stage')
+    .optional()
+    .isIn(['PRINTING', 'CALENDERING', 'FINISHED'])
+    .withMessage('Stage must be: PRINTING, CALENDERING, or FINISHED'),
+
+  body('productionNotes')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Production notes must have maximum 1000 characters')
+    .trim(),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validations for updating production sheet
+const validateUpdateProductionSheet = [
+  body('productionOrderId')
+    .optional()
+    .isMongoId()
+    .withMessage('Production order ID must be a valid MongoDB ObjectId'),
+
+  body('entryDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Entry date must be a valid date'),
+
+  body('expectedExitDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Expected exit date must be a valid date')
+    .custom((value, { req }) => {
+      // Verificar se expectedExitDate é posterior a entryDate (se ambos fornecidos)
+      if (req.body.entryDate && value) {
+        const entryDate = new Date(req.body.entryDate);
+        const expectedExitDate = new Date(value);
+        
+        if (expectedExitDate <= entryDate) {
+          throw new Error('Expected exit date must be after entry date');
+        }
+      }
+      return true;
+    }),
+
+  body('machine')
+    .optional()
+    .isInt({ min: 1, max: 4 })
+    .withMessage('Machine must be 1, 2, 3, or 4'),
+
+  body('stage')
+    .optional()
+    .isIn(['PRINTING', 'CALENDERING', 'FINISHED'])
+    .withMessage('Stage must be: PRINTING, CALENDERING, or FINISHED'),
+
+  body('productionNotes')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Production notes must have maximum 1000 characters')
+    .trim(),
+
+  body('active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active field must be a boolean')
+];
+
+// Validation for stage update
+const validateStageUpdateProductionSheet = [
+  body('stage')
+    .notEmpty()
+    .withMessage('Stage is required')
+    .isIn(['PRINTING', 'CALENDERING', 'FINISHED'])
+    .withMessage('Stage must be: PRINTING, CALENDERING, or FINISHED')
+];
+
+// Custom validation middleware for machine availability
+const validateMachineAvailability = async (req, res, next) => {
+  try {
+    const { machine, entryDate, expectedExitDate } = req.body;
+    
+    if (!machine || !expectedExitDate) {
+      return next();
+    }
+
+    const ProductionSheet = require('../models/ProductionSheet');
+    
+    // Verificar se a máquina já está ocupada no período
+    const startDate = entryDate ? new Date(entryDate) : new Date();
+    const endDate = new Date(expectedExitDate);
+    
+    const conflictingSheets = await ProductionSheet.find({
+      machine: machine,
+      active: true,
+      stage: { $ne: 'FINISHED' }, // Excluir finalizados
+      $or: [
+        // Sheet existente que começa durante o período solicitado
+        {
+          entryDate: { $gte: startDate, $lte: endDate }
+        },
+        // Sheet existente que termina durante o período solicitado
+        {
+          expectedExitDate: { $gte: startDate, $lte: endDate }
+        },
+        // Sheet existente que engloba todo o período solicitado
+        {
+          entryDate: { $lte: startDate },
+          expectedExitDate: { $gte: endDate }
+        }
+      ]
+    });
+
+    // Se estiver atualizando, excluir o próprio registro
+    if (req.params.id) {
+      const filteredConflicts = conflictingSheets.filter(
+        sheet => sheet._id.toString() !== req.params.id
+      );
+      
+      if (filteredConflicts.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Machine ${machine} is already busy during this period`,
+          conflictingSheets: filteredConflicts.map(sheet => ({
+            id: sheet._id,
+            internalReference: sheet.internalReference,
+            entryDate: sheet.entryDate,
+            expectedExitDate: sheet.expectedExitDate
+          }))
+        });
+      }
+    } else if (conflictingSheets.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `Machine ${machine} is already busy during this period`,
+        conflictingSheets: conflictingSheets.map(sheet => ({
+          id: sheet._id,
+          internalReference: sheet.internalReference,
+          entryDate: sheet.entryDate,
+          expectedExitDate: sheet.expectedExitDate
+        }))
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error validating machine availability',
+      error: error.message
+    });
+  }
+};
+
+
 module.exports = {
   validateLogin,
   validateRegister,
@@ -751,5 +942,9 @@ module.exports = {
   validateCreateProductionOrder,
   validateUpdateProductionOrder,
   validateStatusUpdateProductionOrder,
-  validatePriorityUpdateProductionOrder
+  validatePriorityUpdateProductionOrder,
+  validateCreateProductionSheet,
+  validateUpdateProductionSheet,
+  validateStageUpdateProductionSheet,
+  validateMachineAvailability
 };

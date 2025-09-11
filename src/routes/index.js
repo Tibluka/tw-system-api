@@ -5,6 +5,7 @@ const healthRoutes = require('./health');
 const clientRoutes = require('./clients');
 const developmentRoutes = require('./developments');
 const productionOrders = require('./productionOrders');
+const productionSheets = require('./productionSheets');
 
 const router = express.Router();
 
@@ -31,5 +32,6 @@ router.use('/users', userRoutes);
 router.use('/clients', clientRoutes);
 router.use('/developments', developmentRoutes);
 router.use('/production-orders', productionOrders);
+router.use('/production-sheets', productionSheets);
 
 module.exports = router;
