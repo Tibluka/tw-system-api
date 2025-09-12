@@ -21,7 +21,11 @@ router.get('/', (req, res) => {
       health: '/health',
       auth: '/auth',
       users: '/users',
-      clients: '/clients'
+      clients: '/clients',
+      clients: '/developments',
+      clients: '/production-orders',
+      clients: '/production-sheets',
+      clients: '/production-receipts'
     }
   });
 });
