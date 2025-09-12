@@ -9,7 +9,6 @@ const developmentSchema = new mongoose.Schema({
   },
   internalReference: {
     type: String,
-    required: [true, 'Internal reference is required'],
     unique: true,
     trim: true,
     uppercase: true,
@@ -125,36 +124,36 @@ developmentSchema.pre('save', async function(next) {
       // Get current year (last 2 digits)
       const year = new Date().getFullYear().toString().slice(-2);
       
-      // Get client data to generate reference
+      // Get client data to get the acronym
       const client = await mongoose.model('Client').findById(this.clientId);
       if (!client) {
         throw new Error('Client not found');
       }
       
-      const clientInitials = client.companyName
-        .replace(/[^a-zA-Z\s]/g, '') // Remove special characters
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .substring(0, 3)
-        .toUpperCase();
+      // Use client's acronym
+      const clientAcronym = client.acronym;
       
-      // Get sequential number for this client
+      // Get the highest sequential number for this client this year
       const lastDevelopment = await this.constructor
         .findOne({ 
           clientId: this.clientId,
-          internalReference: new RegExp(`^${year}${clientInitials}`)
+          internalReference: new RegExp(`^${year}${clientAcronym}\\d{4}$`),
+          active: true
         })
         .sort({ internalReference: -1 });
       
       let sequential = 1;
       if (lastDevelopment) {
-        const lastSequential = parseInt(lastDevelopment.internalReference.slice(-3));
+        // Extract the sequential number from the last reference
+        const lastSequential = parseInt(lastDevelopment.internalReference.slice(-4));
         sequential = lastSequential + 1;
       }
       
-      // Format: 25ABC001
-      this.internalReference = `${year}${clientInitials}${sequential.toString().padStart(3, '0')}`;
+      // Format with 4 digits: 0001, 0002, etc.
+      const sequentialFormatted = sequential.toString().padStart(4, '0');
+      
+      // Final format: 25ABC0001
+      this.internalReference = `${year}${clientAcronym}${sequentialFormatted}`;
       
     } catch (error) {
       return next(error);
