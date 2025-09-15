@@ -28,8 +28,29 @@ const developmentSchema = new mongoose.Schema({
     maxlength: [500, 'Description must have maximum 500 characters']
   },
   pieceImage: {
-    type: String, // Image URL
-    trim: true
+    url: {
+      type: String,
+      default: null
+    },
+    publicId: {
+      type: String,
+      default: null
+    },
+    filename: {
+      type: String,
+      default: null
+    },
+    optimizedUrls: {
+      thumbnail: String,
+      small: String,
+      medium: String,
+      large: String,
+      original: String
+    },
+    uploadedAt: {
+      type: Date,
+      default: null
+    }
   },
   // STATUS
   status: {
@@ -90,6 +111,39 @@ const developmentSchema = new mongoose.Schema({
   timestamps: true,
   versionKey: false
 });
+
+// Middleware para limpar URLs otimizadas quando imagem é removida
+developmentSchema.pre('findOneAndUpdate', function() {
+  const update = this.getUpdate();
+  
+  // Se pieceImage.url está sendo setado como null, limpar todas as URLs
+  if (update.pieceImage && update.pieceImage.url === null) {
+    update.pieceImage = {
+      url: null,
+      publicId: null,
+      filename: null,
+      optimizedUrls: {},
+      uploadedAt: null
+    };
+  }
+});
+
+// Virtual para verificar se tem imagem
+developmentSchema.virtual('hasImage').get(function() {
+  return !!(this.pieceImage && this.pieceImage.url);
+});
+
+// Method para obter URL da imagem otimizada
+developmentSchema.methods.getImageUrl = function(size = 'medium') {
+  if (!this.pieceImage || !this.pieceImage.optimizedUrls) {
+    return null;
+  }
+  
+  const validSizes = ['thumbnail', 'small', 'medium', 'large', 'original'];
+  const selectedSize = validSizes.includes(size) ? size : 'medium';
+  
+  return this.pieceImage.optimizedUrls[selectedSize] || this.pieceImage.url;
+};
 
 // VIRTUAL POPULATE - sempre inclui dados do cliente automaticamente
 developmentSchema.virtual('client', {

@@ -110,4 +110,24 @@ router.delete('/:id',
   developmentController.destroy
 );
 
+// ROTAS PARA IMAGEM DA PEÇA
+router.post(
+  '/:id/image', 
+  requireAuth,
+  upload.single('image'), // 'image' é o nome do campo no FormData
+  developmentController.uploadImage
+);
+
+router.delete(
+  '/:id/image',
+  requireAuth,
+  developmentController.removeImage
+);
+
+router.get(
+  '/:id/image',
+  requireAuth,
+  developmentController.getImage
+);
+
 module.exports = router;
