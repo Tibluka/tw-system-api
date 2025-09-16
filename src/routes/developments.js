@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const developmentController = require('../controllers/developmentController');
 const { authenticate } = require('../middleware/auth');
+const { upload } = require('../config/cloudinary'); // Import upload middleware
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 const {
   validateCreateDevelopment,
@@ -113,20 +114,20 @@ router.delete('/:id',
 // ROTAS PARA IMAGEM DA PEÇA
 router.post(
   '/:id/image', 
-  authenticate,
+  validateObjectId,
   upload.single('image'), // 'image' é o nome do campo no FormData
   developmentController.uploadImage
 );
 
 router.delete(
   '/:id/image',
-  authenticate,
+  validateObjectId,
   developmentController.removeImage
 );
 
 router.get(
   '/:id/image',
-  authenticate,
+  validateObjectId,
   developmentController.getImage
 );
 

@@ -1,6 +1,7 @@
 const Development = require('../models/Development');
 const Client = require('../models/Client');
 const { validationResult } = require('express-validator');
+const { deleteImage, generateOptimizedUrls } = require('../config/cloudinary');
 
 class DevelopmentController {
   // GET /developments - List all developments
@@ -493,6 +494,171 @@ class DevelopmentController {
 
    // POST /developments/:id/image - Upload da imagem
    async uploadImage(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Validar se development existe
+      const development = await Development.findById(id);
+      if (!development) {
+        return res.status(404).json({
+          success: false,
+          message: 'Development não encontrado'
+        });
+      }
+
+      // Se já tem imagem, deletar a anterior
+      if (development.pieceImage && development.pieceImage.publicId) {
+        try {
+          await deleteImage(development.pieceImage.publicId);
+        } catch (error) {
+          console.log('Erro ao deletar imagem anterior:', error);
+          // Continua mesmo com erro na deleção
+        }
+      }
+
+      // Verificar se arquivo foi enviado
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nenhum arquivo de imagem foi enviado'
+        });
+      }
+
+      // Gerar URLs otimizadas
+      const optimizedUrls = generateOptimizedUrls(req.file.public_id);
+
+      // Atualizar development com nova imagem
+      const updatedDevelopment = await Development.findByIdAndUpdate(
+        id,
+        {
+          'pieceImage.url': req.file.secure_url,
+          'pieceImage.publicId': req.file.public_id,
+          'pieceImage.filename': req.file.original_filename,
+          'pieceImage.optimizedUrls': optimizedUrls,
+          'pieceImage.uploadedAt': new Date()
+        },
+        { new: true, runValidators: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Imagem enviada com sucesso',
+        data: {
+          development: updatedDevelopment,
+          imageUrls: optimizedUrls
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor ao fazer upload da imagem',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // DELETE /developments/:id/image - Remover imagem
+  async removeImage(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const development = await Development.findById(id);
+      if (!development) {
+        return res.status(404).json({
+          success: false,
+          message: 'Development não encontrado'
+        });
+      }
+
+      // Verificar se tem imagem para remover
+      if (!development.pieceImage || !development.pieceImage.publicId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Development não possui imagem para remover'
+        });
+      }
+
+      // Deletar imagem do Cloudinary
+      try {
+        await deleteImage(development.pieceImage.publicId);
+      } catch (error) {
+        console.error('Erro ao deletar imagem do Cloudinary:', error);
+        // Continua para limpar do banco mesmo com erro
+      }
+
+      // Remover referência da imagem do banco
+      const updatedDevelopment = await Development.findByIdAndUpdate(
+        id,
+        {
+          'pieceImage.url': null,
+          'pieceImage.publicId': null,
+          'pieceImage.filename': null,
+          'pieceImage.optimizedUrls': {},
+          'pieceImage.uploadedAt': null
+        },
+        { new: true, runValidators: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Imagem removida com sucesso',
+        data: updatedDevelopment
+      });
+
+    } catch (error) {
+      console.error('Erro ao remover imagem:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor ao remover imagem',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // GET /developments/:id/image - Obter informações da imagem
+  async getImage(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const development = await Development.findById(id).select('pieceImage');
+      if (!development) {
+        return res.status(404).json({
+          success: false,
+          message: 'Development não encontrado'
+        });
+      }
+
+      if (!development.pieceImage || !development.pieceImage.url) {
+        return res.status(404).json({
+          success: false,
+          message: 'Development não possui imagem'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          image: development.pieceImage,
+          urls: development.pieceImage.optimizedUrls
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar imagem:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor ao buscar imagem',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  async uploadImage(req, res) {
     try {
       const { id } = req.params;
       
