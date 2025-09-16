@@ -137,4 +137,47 @@ router.get(
   developmentController.getImage
 );
 
+
+router.post('/:id/test-upload', (req, res) => {
+  const start = Date.now();
+  
+  // Upload direto via Cloudinary API
+  const formidable = require('formidable');
+  const form = new formidable.IncomingForm();
+  
+  form.parse(req, (err, fields, files) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    
+    const file = files.image;
+    if (!file) {
+      return res.status(400).json({ error: 'No file' });
+    }
+    
+    // Upload direto
+    cloudinary.uploader.upload(file.filepath, {
+      folder: 'tw-system/test',
+      quality: 'auto:low',
+      width: 600,
+      height: 600,
+      crop: 'limit'
+    }, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+      
+      const totalTime = Date.now() - start;
+      console.log(`🚀 UPLOAD DIRETO: ${totalTime}ms`);
+      
+      res.json({
+        success: true,
+        url: result.secure_url,
+        time: `${totalTime}ms`,
+        method: 'direct-api'
+      });
+    });
+  });
+});
+
 module.exports = router;

@@ -491,40 +491,30 @@ class DevelopmentController {
     }
   }
 
- // src/controllers/developmentController.js - MÉTODO OTIMIZADO
+ // src/controllers/developmentController.js - MÉTODO ULTRA MÍNIMO
 
 async uploadImage(req, res) {
-  const startTime = Date.now(); // ← Medir tempo de execução
-  console.log('⏱️ Iniciando upload...');
+  const start = Date.now();
   
   try {
-    const { id } = req.params;
-    // Validação rápida
+    // Verificação mínima
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nenhum arquivo foi recebido'
-      });
+      return res.status(400).json({ success: false, message: 'No file' });
     }
 
+    console.log(`⚡ Upload completo em: ${Date.now() - start}ms`);
+
+    // Resposta mínima
     res.json({
       success: true,
-      message: 'Imagem enviada com sucesso',
-      data: {
-        file: req.file,
-        developmentId: id
-      }
+      url: req.file.secure_url || req.file.url,
+      publicId: req.file.public_id,
+      time: `${Date.now() - start}ms`
     });
 
   } catch (error) {
-    const totalTime = Date.now() - startTime;
-    console.error(`💥 ERRO após ${totalTime}ms:`, error.message);
-    
-    res.status(500).json({
-      success: false,
-      message: 'Erro no upload',
-      error: error.message
-    });
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 }
 
