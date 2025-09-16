@@ -82,7 +82,6 @@ class DevelopmentController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar developments:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar developments',
@@ -495,42 +494,20 @@ class DevelopmentController {
  // Substitua o método uploadImage no seu controller por este:
 
 async uploadImage(req, res) {
-  console.log('🎉 CHEGOU NO CONTROLLER UPLOAD!');
-  console.log('Development ID:', req.params.id);
-  
   try {
     // DEBUG COMPLETO DO ARQUIVO
-    console.log('=== DEBUG ARQUIVO COMPLETO ===');
-    console.log('req.file exists?', !!req.file);
-    
-    if (req.file) {
-      console.log('TODAS as propriedades do req.file:');
-      console.log(JSON.stringify(req.file, null, 2));
-    } else {
-      console.log('❌ req.file é undefined!');
+    if (!req.file) {
       return res.status(400).json({
         success: false,
         message: 'Nenhum arquivo foi recebido'
       });
     }
 
-    // Verificar propriedades específicas do Cloudinary
-    console.log('=== PROPRIEDADES DO CLOUDINARY ===');
-    console.log('secure_url:', req.file.secure_url);
-    console.log('public_id:', req.file.public_id);
-    console.log('url:', req.file.url);
-    console.log('resource_type:', req.file.resource_type);
-    console.log('format:', req.file.format);
-
     // Tentar usar diferentes propriedades
     const publicId = req.file.public_id || req.file.filename || req.file.id;
     const imageUrl = req.file.secure_url || req.file.url || req.file.path;
     
-    console.log('Public ID usado:', publicId);
-    console.log('URL da imagem:', imageUrl);
-
     if (!imageUrl) {
-      console.log('❌ Não foi possível obter URL da imagem');
       return res.status(500).json({
         success: false,
         message: 'Cloudinary não processou a imagem corretamente',
@@ -552,7 +529,6 @@ async uploadImage(req, res) {
     });
 
   } catch (error) {
-    console.error('💥 ERRO NO CONTROLLER:', error);
     res.status(500).json({
       success: false,
       message: 'Erro no controller',
@@ -586,7 +562,6 @@ async uploadImage(req, res) {
       try {
         await deleteImage(development.pieceImage.publicId);
       } catch (error) {
-        console.error('Erro ao deletar imagem do Cloudinary:', error);
         // Continua para limpar do banco mesmo com erro
       }
 
@@ -610,8 +585,6 @@ async uploadImage(req, res) {
       });
 
     } catch (error) {
-      console.error('Erro ao remover imagem:', error);
-      
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao remover imagem',
@@ -649,78 +622,9 @@ async uploadImage(req, res) {
       });
 
     } catch (error) {
-      console.error('Erro ao buscar imagem:', error);
-      
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar imagem',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-  }
-
-  async uploadImage(req, res) {
-    try {
-      const { id } = req.params;
-      
-      // Validar se development existe
-      const development = await Development.findById(id);
-      if (!development) {
-        return res.status(404).json({
-          success: false,
-          message: 'Development não encontrado'
-        });
-      }
-
-      // Se já tem imagem, deletar a anterior
-      if (development.pieceImage && development.pieceImage.publicId) {
-        try {
-          await deleteImage(development.pieceImage.publicId);
-        } catch (error) {
-          console.log('Erro ao deletar imagem anterior:', error);
-          // Continua mesmo com erro na deleção
-        }
-      }
-
-      // Verificar se arquivo foi enviado
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Nenhum arquivo de imagem foi enviado'
-        });
-      }
-
-      // Gerar URLs otimizadas
-      const optimizedUrls = generateOptimizedUrls(req.file.public_id);
-
-      // Atualizar development com nova imagem
-      const updatedDevelopment = await Development.findByIdAndUpdate(
-        id,
-        {
-          'pieceImage.url': req.file.secure_url,
-          'pieceImage.publicId': req.file.public_id,
-          'pieceImage.filename': req.file.original_filename,
-          'pieceImage.optimizedUrls': optimizedUrls,
-          'pieceImage.uploadedAt': new Date()
-        },
-        { new: true, runValidators: true }
-      );
-
-      res.json({
-        success: true,
-        message: 'Imagem enviada com sucesso',
-        data: {
-          development: updatedDevelopment,
-          imageUrls: optimizedUrls
-        }
-      });
-
-    } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor ao fazer upload da imagem',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -751,7 +655,6 @@ async uploadImage(req, res) {
       try {
         await deleteImage(development.pieceImage.publicId);
       } catch (error) {
-        console.error('Erro ao deletar imagem do Cloudinary:', error);
         // Continua para limpar do banco mesmo com erro
       }
 
@@ -775,8 +678,6 @@ async uploadImage(req, res) {
       });
 
     } catch (error) {
-      console.error('Erro ao remover imagem:', error);
-      
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao remover imagem',
@@ -814,8 +715,6 @@ async uploadImage(req, res) {
       });
 
     } catch (error) {
-      console.error('Erro ao buscar imagem:', error);
-      
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar imagem',

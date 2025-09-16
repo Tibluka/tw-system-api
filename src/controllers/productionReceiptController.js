@@ -98,7 +98,6 @@ class ProductionReceiptController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar production receipts:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar production receipts',

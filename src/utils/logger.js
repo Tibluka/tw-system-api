@@ -23,12 +23,9 @@ const consoleFormat = winston.format.combine(
       const logMessage = `${timestamp} [${level}]: ${stack || message}`;
       // Garantir que apareça no debug console
       if (level.includes('error')) {
-        console.error(logMessage);
-      } else if (level.includes('warn')) {
-        console.warn(logMessage);
-      } else {
-        console.log(logMessage);
-      }
+        } else if (level.includes('warn')) {
+        } else {
+        }
     }
     return `${timestamp} [${level}]: ${stack || message}`;
   })
@@ -99,14 +96,11 @@ const createLogMethod = (level) => {
       
       switch (level) {
         case 'error':
-          console.error(formattedMessage, ...args);
           break;
         case 'warn':
-          console.warn(formattedMessage, ...args);
           break;
         default:
-          console.log(formattedMessage, ...args);
-      }
+          }
     }
   };
 };
@@ -126,8 +120,7 @@ const debugLogger = {
       
       // También log direto em debug mode
       if (isDebugMode) {
-        console.log(`[HTTP]: ${cleanMessage}`);
-      }
+        }
     }
   }
 };

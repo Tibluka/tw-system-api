@@ -92,7 +92,6 @@ class ProductionOrderController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar production orders:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar production orders',

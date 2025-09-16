@@ -3,11 +3,6 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-console.log('=== VERIFICANDO CLOUDINARY CONFIG ===');
-console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? 'DEFINIDO' : '❌ NÃO DEFINIDO');
-console.log('CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? 'DEFINIDO' : '❌ NÃO DEFINIDO');
-console.log('CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? 'DEFINIDO' : '❌ NÃO DEFINIDO');
-
 // Configuração do Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -18,11 +13,9 @@ cloudinary.config({
 // Testar conexão com Cloudinary
 cloudinary.api.ping()
   .then(result => {
-    console.log('✅ Cloudinary conectado:', result);
-  })
+    })
   .catch(error => {
-    console.log('❌ Erro na conexão com Cloudinary:', error.message);
-  });
+    });
 
 // Configuração do storage
 const storage = new CloudinaryStorage({
@@ -43,7 +36,6 @@ const storage = new CloudinaryStorage({
       const developmentId = req.params.id || req.body.developmentId;
       const timestamp = Date.now();
       const publicId = `development_${developmentId}_${timestamp}`;
-      console.log('📝 Gerando public_id:', publicId);
       return publicId;
     }
   },
@@ -56,14 +48,10 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (req, file, cb) => {
-    console.log('🔍 Validando arquivo:', file.originalname, file.mimetype);
-    
     // Verificar se é imagem
     if (file.mimetype.startsWith('image/')) {
-      console.log('✅ Arquivo válido');
       cb(null, true);
     } else {
-      console.log('❌ Arquivo inválido - não é imagem');
       cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
     }
   }
@@ -72,22 +60,16 @@ const upload = multer({
 // Função para deletar imagem do Cloudinary
 const deleteImage = async (publicId) => {
   try {
-    console.log('🗑️ Deletando imagem do Cloudinary:', publicId);
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log('✅ Imagem deletada:', result);
     return result;
   } catch (error) {
-    console.error('❌ Erro ao deletar imagem do Cloudinary:', error);
     throw error;
   }
 };
 
 // Função para gerar URLs otimizadas
 const generateOptimizedUrls = (publicId) => {
-  console.log('🖼️ Gerando URLs otimizadas para:', publicId);
-  
   if (!publicId) {
-    console.log('❌ Public ID não fornecido');
     return {};
   }
   
@@ -115,7 +97,6 @@ const generateOptimizedUrls = (publicId) => {
     })
   };
   
-  console.log('URLs geradas:', urls);
   return urls;
 };
 

@@ -70,7 +70,6 @@ class ClientController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar clientes:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar clientes',
@@ -106,8 +105,6 @@ class ClientController {
         data: client
       });
     } catch (error) {
-      console.error('Erro ao buscar cliente:', error);
-      
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -171,8 +168,6 @@ class ClientController {
         data: client
       });
     } catch (error) {
-      console.error('Erro ao criar cliente:', error);
-      
       if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(err => ({
           field: err.path,
@@ -272,8 +267,6 @@ class ClientController {
         data: client
       });
     } catch (error) {
-      console.error('Erro ao atualizar cliente:', error);
-      
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -341,8 +334,6 @@ class ClientController {
         data: client
       });
     } catch (error) {
-      console.error('Erro ao desativar cliente:', error);
-      
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -390,8 +381,6 @@ class ClientController {
         data: client
       });
     } catch (error) {
-      console.error('Erro ao reativar cliente:', error);
-      
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -448,7 +437,6 @@ class ClientController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar estatísticas',
@@ -546,7 +534,6 @@ class ClientController {
         }
       });
     } catch (error) {
-      console.error('Erro na busca avançada:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor na busca',

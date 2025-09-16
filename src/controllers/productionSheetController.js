@@ -91,7 +91,6 @@ class ProductionSheetController {
         }
       });
     } catch (error) {
-      console.error('Erro ao buscar production sheets:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar production sheets',
