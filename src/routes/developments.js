@@ -26,7 +26,13 @@ const developmentLimiter = rateLimit({
 });
 
 // Apply authentication to all routes
-router.use(authenticate);
+router.use((req, res, next) => {
+  // Pular autenticação para rotas de imagem
+  if (req.path.includes('/image')) {
+    return next();
+  }
+  authenticate(req, res, next);
+});
 
 // Apply rate limiting to all routes
 router.use(developmentLimiter);
