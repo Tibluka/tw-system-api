@@ -1,54 +1,64 @@
-// src/config/cloudinary.js
+// src/config/cloudinary.js - VERSÃO OTIMIZADA
+
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// Configuração do Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Testar conexão com Cloudinary
-cloudinary.api.ping()
-  .then(result => {
-    })
-  .catch(error => {
-    });
+// ====================================================================
+// CONFIGURAÇÃO RÁPIDA - SEM TRANSFORMAÇÕES NO UPLOAD
+// ====================================================================
+const fastStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'tw-system/developments',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    // SEM transformações no upload - aplica depois via URL
+    public_id: (req, file) => {
+      const developmentId = req.params.id;
+      const timestamp = Date.now();
+      return `development_${developmentId}_${timestamp}`;
+    }
+  },
+});
 
-// Configuração do storage
-const storage = new CloudinaryStorage({
+// ====================================================================
+// CONFIGURAÇÃO MÉDIA - TRANSFORMAÇÕES MÍNIMAS
+// ====================================================================
+const balancedStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'tw-system/developments',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [
       {
-        width: 1200,
-        height: 1200,
-        crop: 'limit',
-        quality: 'auto:good',
-        fetch_format: 'auto'
+        quality: 'auto:good', // Só otimização de qualidade
+        fetch_format: 'auto'  // Formato automático
+        // Removido: width, height, crop (fazemos via URL depois)
       }
     ],
     public_id: (req, file) => {
-      const developmentId = req.params.id || req.body.developmentId;
+      const developmentId = req.params.id;
       const timestamp = Date.now();
-      const publicId = `development_${developmentId}_${timestamp}`;
-      return publicId;
+      return `development_${developmentId}_${timestamp}`;
     }
   },
 });
 
-// Configuração do multer com logs
+// ====================================================================
+// UPLOAD CONFIGURÁVEL
+// ====================================================================
 const upload = multer({ 
-  storage: storage,
+  storage: fastStorage, // ← Troque aqui: fastStorage, balancedStorage
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 5 * 1024 * 1024, // 5MB (reduzido de 10MB)
   },
   fileFilter: (req, file, cb) => {
-    // Verificar se é imagem
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
@@ -57,52 +67,57 @@ const upload = multer({
   }
 });
 
-// Função para deletar imagem do Cloudinary
+// ====================================================================
+// URLs OTIMIZADAS - GERADAS SOB DEMANDA (NÃO NO UPLOAD)
+// ====================================================================
+const generateOptimizedUrls = (publicId) => {
+  if (!publicId) return {};
+  
+  return {
+    original: cloudinary.url(publicId),
+    thumbnail: cloudinary.url(publicId, {
+      transformation: [{ width: 150, height: 150, crop: 'fill', quality: 'auto:low' }]
+    }),
+    small: cloudinary.url(publicId, {
+      transformation: [{ width: 300, height: 300, crop: 'limit', quality: 'auto:good' }]
+    }),
+    medium: cloudinary.url(publicId, {
+      transformation: [{ width: 600, height: 600, crop: 'limit', quality: 'auto:good' }]
+    }),
+    large: cloudinary.url(publicId, {
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto:good' }]
+    })
+  };
+};
+
+// ====================================================================
+// VERSÃO AINDA MAIS RÁPIDA - SEM URLS OTIMIZADAS NO UPLOAD
+// ====================================================================
+const generateOptimizedUrlsLazy = (publicId) => {
+  if (!publicId) return {};
+  
+  // Retorna só a URL original - as otimizadas são geradas quando necessário
+  return {
+    original: cloudinary.url(publicId)
+    // thumbnail, small, medium, large são geradas sob demanda na interface
+  };
+};
+
+// Função para deletar imagem
 const deleteImage = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
   } catch (error) {
+    console.error('Erro ao deletar imagem:', error);
     throw error;
   }
-};
-
-// Função para gerar URLs otimizadas
-const generateOptimizedUrls = (publicId) => {
-  if (!publicId) {
-    return {};
-  }
-  
-  const urls = {
-    original: cloudinary.url(publicId),
-    thumbnail: cloudinary.url(publicId, {
-      transformation: [
-        { width: 150, height: 150, crop: 'fill', quality: 'auto:low' }
-      ]
-    }),
-    small: cloudinary.url(publicId, {
-      transformation: [
-        { width: 300, height: 300, crop: 'limit', quality: 'auto:good' }
-      ]
-    }),
-    medium: cloudinary.url(publicId, {
-      transformation: [
-        { width: 600, height: 600, crop: 'limit', quality: 'auto:good' }
-      ]
-    }),
-    large: cloudinary.url(publicId, {
-      transformation: [
-        { width: 1200, height: 1200, crop: 'limit', quality: 'auto:good' }
-      ]
-    })
-  };
-  
-  return urls;
 };
 
 module.exports = {
   cloudinary,
   upload,
   deleteImage,
-  generateOptimizedUrls
+  generateOptimizedUrls,
+  generateOptimizedUrlsLazy
 };

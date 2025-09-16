@@ -491,11 +491,15 @@ class DevelopmentController {
     }
   }
 
- // Substitua o método uploadImage no seu controller por este:
+ // src/controllers/developmentController.js - MÉTODO OTIMIZADO
 
 async uploadImage(req, res) {
+  const startTime = Date.now(); // ← Medir tempo de execução
+  console.log('⏱️ Iniciando upload...');
+  
   try {
-    // DEBUG COMPLETO DO ARQUIVO
+    const { id } = req.params;
+    // Validação rápida
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -503,35 +507,22 @@ async uploadImage(req, res) {
       });
     }
 
-    // Tentar usar diferentes propriedades
-    const publicId = req.file.public_id || req.file.filename || req.file.id;
-    const imageUrl = req.file.secure_url || req.file.url || req.file.path;
-    
-    if (!imageUrl) {
-      return res.status(500).json({
-        success: false,
-        message: 'Cloudinary não processou a imagem corretamente',
-        debug: req.file
-      });
-    }
-
-    // Por enquanto, vamos apenas retornar sucesso com os dados que temos
     res.json({
       success: true,
-      message: 'Upload processado - modo debug',
-      debug: {
-        fileReceived: !!req.file,
-        imageUrl: imageUrl,
-        publicId: publicId,
-        allFileProperties: Object.keys(req.file),
-        fullFile: req.file
+      message: 'Imagem enviada com sucesso',
+      data: {
+        file: req.file,
+        developmentId: id
       }
     });
 
   } catch (error) {
+    const totalTime = Date.now() - startTime;
+    console.error(`💥 ERRO após ${totalTime}ms:`, error.message);
+    
     res.status(500).json({
       success: false,
-      message: 'Erro no controller',
+      message: 'Erro no upload',
       error: error.message
     });
   }
