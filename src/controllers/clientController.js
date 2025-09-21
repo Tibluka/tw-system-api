@@ -14,27 +14,111 @@ class ClientController {
         order = 'asc'
       } = req.query;
 
+      console.log('📥 PARAMS RECEBIDOS:', { page, limit, search, active, sortBy, order });
+
       // Validar e converter parâmetros de paginação
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const query = {};
+      // ✅ SEMPRE FILTRAR POR ATIVOS COMO PADRÃO
+      const query = { active: true };
       
-      // Filtro por status active
-      if (active !== undefined) {
-        query.active = active === 'true';
+      // Permitir filtrar inativos apenas se explicitamente solicitado
+      if (active === 'false') {
+        query.active = false;
+      } else if (active === 'all') {
+        delete query.active; // Remove o filtro para mostrar todos
       }
       
-      // Busca por texto
-      if (search) {
-        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-        query.$or = [
-          { companyName: { $regex: searchRegex, $options: 'i' } },
-          { cnpj: { $regex: search.replace(/[^\d]/g, ''), $options: 'i' } },
-          { 'contact.email': { $regex: searchRegex, $options: 'i' } }
-        ];
+      // ✅ BUSCA POR TEXTO CORRIGIDA
+      if (search && search.trim() !== '') {
+        const searchTerm = decodeURIComponent(search.trim()); // Decodificar URL
+        console.log('🔍 TERMO DE BUSCA DECODIFICADO:', searchTerm);
+        
+        // Escape caracteres especiais para regex
+        const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        console.log('🔍 TERMO ESCAPADO:', escapedSearch);
+        
+        // Remove formatação do CNPJ/telefone para busca apenas por números
+        const numbersOnly = searchTerm.replace(/[^\d]/g, '');
+        console.log('🔍 APENAS NÚMEROS:', numbersOnly);
+        
+        // ✅ QUERY $OR CORRIGIDA - cada condição deve ser específica e restritiva
+        const searchConditions = [];
+        
+        // 1. Busca por nome da empresa (case insensitive)
+        if (searchTerm.length >= 2) { // Mínimo 2 caracteres para evitar resultados muito amplos
+          searchConditions.push({ 
+            companyName: { 
+              $regex: escapedSearch, 
+              $options: 'i' 
+            } 
+          });
+        }
+        
+        // 2. Busca por sigla/acronym (case insensitive)
+        if (searchTerm.length >= 2) {
+          searchConditions.push({ 
+            acronym: { 
+              $regex: escapedSearch, 
+              $options: 'i' 
+            } 
+          });
+        }
+        
+        // 3. Busca por CNPJ (apenas números, mínimo 4 dígitos)
+        if (numbersOnly.length >= 4) {
+          searchConditions.push({ 
+            cnpj: { 
+              $regex: numbersOnly, 
+              $options: 'i' 
+            } 
+          });
+        }
+        
+        // 4. Busca por email (mínimo 3 caracteres)
+        if (searchTerm.length >= 3 && searchTerm.includes('@')) {
+          searchConditions.push({ 
+            'contact.email': { 
+              $regex: escapedSearch, 
+              $options: 'i' 
+            } 
+          });
+        }
+        
+        // 5. Busca por nome do responsável (mínimo 2 caracteres)
+        if (searchTerm.length >= 2) {
+          searchConditions.push({ 
+            'contact.responsibleName': { 
+              $regex: escapedSearch, 
+              $options: 'i' 
+            } 
+          });
+        }
+        
+        // 6. Busca por telefone (apenas números, mínimo 4 dígitos)
+        if (numbersOnly.length >= 4) {
+          searchConditions.push({ 
+            'contact.phone': { 
+              $regex: numbersOnly 
+            } 
+          });
+        }
+        
+        // ✅ SÓ ADICIONA $OR SE TIVER CONDIÇÕES VÁLIDAS
+        if (searchConditions.length > 0) {
+          query.$or = searchConditions;
+          console.log('🔍 CONDIÇÕES DE BUSCA:', searchConditions.length);
+        } else {
+          // ❌ Se o termo de busca não atende aos critérios mínimos, 
+          // força uma query que não retornará resultados
+          query._id = new mongoose.Types.ObjectId('000000000000000000000000'); // ID inexistente
+          console.log('🚫 TERMO DE BUSCA MUITO CURTO/INVÁLIDO - Forçando resultado vazio');
+        }
       }
+
+      console.log('🔍 QUERY FINAL:', JSON.stringify(query, null, 2));
 
       // Configurar ordenação
       const sortOrder = order === 'desc' ? -1 : 1;
@@ -49,6 +133,8 @@ class ClientController {
           .lean(), // Para melhor performance
         Client.countDocuments(query)
       ]);
+
+      console.log(`📊 ENCONTRADOS: ${clients.length} clientes de ${totalCount} total`);
 
       // Calcular informações de paginação
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -70,6 +156,7 @@ class ClientController {
         }
       });
     } catch (error) {
+      console.error('❌ ERRO NO CLIENT CONTROLLER:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar clientes',

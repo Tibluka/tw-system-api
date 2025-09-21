@@ -22,12 +22,12 @@ const validateLogin = (req, res, next) => {
 };
 
 const validateRegister = (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !role) {
     return res.status(400).json({
       success: false,
-      message: 'Nome, email e senha são obrigatórios'
+      message: 'Nome, email, senha e função são obrigatórios'
     });
   }
 
