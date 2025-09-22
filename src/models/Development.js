@@ -23,9 +23,7 @@ const developmentSchema = new mongoose.Schema({
   // BASIC DATA
   description: {
     type: String,
-    required: [true, 'Description is required'],
     trim: true,
-    maxlength: [500, 'Description must have maximum 500 characters']
   },
   pieceImage: {
     url: {
@@ -74,18 +72,8 @@ const developmentSchema = new mongoose.Schema({
         default: false 
       },
       negotiatedPrice: { 
-        type: Number, 
-        min: [0, 'Negotiated price must be positive'],
-        validate: {
-          validator: function(v) {
-            // Se rotary está habilitado, deve ter preço
-            if (this.productionType.rotary.enabled && !v) {
-              return false;
-            }
-            return true;
-          },
-          message: 'Negotiated price is required when rotary is enabled'
-        }
+        type: Number,
+        trim: true
       }
     },
     localized: {

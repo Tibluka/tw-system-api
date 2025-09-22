@@ -237,10 +237,10 @@ const validateCNPJ = cnpj => {
   if (!cnpj) return false;
 
   // Verificar se contém apenas números (não aceita . / -)
-  if (!/^\d+$/.test(cnpj)) return false;
+  //if (!/^\d+$/.test(cnpj)) return false;
 
   // Verificar se tem exatamente 14 dígitos
-  if (cnpj.length !== 14) return false;
+  //if (cnpj.length !== 14) return false;
   else return true;
 };
 
@@ -450,10 +450,7 @@ const validateCreateDevelopment = [
     .withMessage('Client ID must be a valid MongoDB ObjectId'),
 
   body('description')
-    .notEmpty()
-    .withMessage('Description is required')
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Description must be between 10 and 500 characters')
+    .optional()
     .trim(),
 
   body('clientReference')
@@ -525,8 +522,6 @@ const validateUpdateDevelopment = [
 
   body('description')
     .optional()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Description must be between 10 and 500 characters')
     .trim(),
 
   body('clientReference')
@@ -611,28 +606,6 @@ const validateProductionType = (req, res, next) => {
       success: false,
       message: 'At least one production type must be enabled'
     });
-  }
-
-  // If rotary is enabled, negotiatedPrice is required
-  if (rotary?.enabled && !rotary.negotiatedPrice) {
-    return res.status(400).json({
-      success: false,
-      message: 'Negotiated price is required when rotary production is enabled'
-    });
-  }
-
-  // If localized is enabled, at least one size must be greater than 0
-  if (localized?.enabled) {
-    const sizes = localized.sizes;
-    const hasValidSizes = sizes && Object.values(sizes).some(size => size > 0);
-
-    if (!hasValidSizes) {
-      return res.status(400).json({
-        success: false,
-        message:
-          'At least one size quantity must be greater than 0 when localized production is enabled'
-      });
-    }
   }
 
   next();
