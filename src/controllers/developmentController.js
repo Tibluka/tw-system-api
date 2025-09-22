@@ -491,32 +491,113 @@ class DevelopmentController {
     }
   }
 
- // src/controllers/developmentController.js - MÉTODO ULTRA MÍNIMO
-
-async uploadImage(req, res) {
-  const start = Date.now();
+  async uploadImage(req, res) {
+    const start = Date.now();
+    
+    try {
+      const { id } = req.params; // ID do development vem da rota
+      
+      // Verificação mínima
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Nenhum arquivo enviado' 
+        });
+      }
   
-  try {
-    // Verificação mínima
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No file' });
+      // Verificar se o development existe
+      const development = await Development.findById(id);
+      if (!development) {
+        return res.status(404).json({
+          success: false,
+          message: 'Development não encontrado'
+        });
+      }
+  
+      // Se já tem imagem, podemos opcionalmente deletar a anterior
+      if (development.pieceImage && development.pieceImage.publicId) {
+        try {
+          const { cloudinary } = require('../config/cloudinary');
+          await cloudinary.uploader.destroy(development.pieceImage.publicId);
+        } catch (cloudinaryError) {
+          console.warn('Erro ao deletar imagem anterior:', cloudinaryError.message);
+          // Continua com o upload mesmo se não conseguir deletar a anterior
+        }
+      }
+  
+      // Estrutura da imagem para salvar no pieceImage
+      // Para multer-storage-cloudinary, as propriedades são diferentes:
+      const imageData = {
+        url: req.file.path, // multer-storage-cloudinary usa 'path'
+        publicId: req.file.filename, // multer-storage-cloudinary usa 'filename' para publicId
+        filename: req.file.originalname, // nome original do arquivo
+        optimizedUrls: {
+          // Como não tem eager transforms, vamos gerar URLs manualmente
+          thumbnail: req.file.path.replace('/upload/', '/upload/w_150,h_150,c_fill,q_auto:low/'),
+          small: req.file.path.replace('/upload/', '/upload/w_300,h_300,c_limit,q_auto:low/'),
+          medium: req.file.path.replace('/upload/', '/upload/w_600,h_600,c_limit,q_auto:good/'),
+          large: req.file.path.replace('/upload/', '/upload/w_1200,h_1200,c_limit,q_auto:good/'),
+          original: req.file.path
+        },
+        uploadedAt: new Date()
+      };
+  
+      // Atualizar o development com a nova imagem
+      const updatedDevelopment = await Development.findByIdAndUpdate(
+        id,
+        { 
+          'pieceImage.url': imageData.url,
+          'pieceImage.publicId': imageData.publicId,
+          'pieceImage.filename': imageData.filename,
+          'pieceImage.optimizedUrls': imageData.optimizedUrls,
+          'pieceImage.uploadedAt': imageData.uploadedAt
+        },
+        { 
+          new: true, 
+          runValidators: true 
+        }
+      );
+  
+      console.log(`⚡ Upload e salvamento completo em: ${Date.now() - start}ms`);
+  
+      // Resposta com dados completos
+      res.json({
+        success: true,
+        message: 'Imagem enviada e salva com sucesso',
+        data: {
+          developmentId: development._id,
+          image: updatedDevelopment.pieceImage,
+          urls: updatedDevelopment.pieceImage.optimizedUrls
+        },
+        time: `${Date.now() - start}ms`
+      });
+  
+    } catch (error) {
+      console.error('Upload error:', error);
+      
+      // Diferentes tipos de erro para melhor debug
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de development inválido'
+        });
+      }
+      
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Erro de validação',
+          details: error.message
+        });
+      }
+  
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
-
-    console.log(`⚡ Upload completo em: ${Date.now() - start}ms`);
-
-    // Resposta mínima
-    res.json({
-      success: true,
-      url: req.file.secure_url || req.file.url,
-      publicId: req.file.public_id,
-      time: `${Date.now() - start}ms`
-    });
-
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
-}
 
   // DELETE /developments/:id/image - Remover imagem
   async removeImage(req, res) {
