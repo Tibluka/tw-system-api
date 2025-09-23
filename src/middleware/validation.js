@@ -635,18 +635,11 @@ const validateCreateProductionOrder = [
     .withMessage('Fabric type must be between 2 and 100 characters')
     .trim(),
 
-  body('pilot').optional().isBoolean().withMessage('Pilot must be a boolean'),
-
   body('observations')
     .optional()
     .isLength({ max: 1000 })
     .withMessage('Observations must have maximum 1000 characters')
     .trim(),
-
-  body('priority')
-    .optional()
-    .isIn(['green', 'yellow', 'red'])
-    .withMessage('Priority must be: green, yellow, or red'),
 
   body('status')
     .optional()
@@ -669,18 +662,11 @@ const validateUpdateProductionOrder = [
     .withMessage('Fabric type must be between 2 and 100 characters')
     .trim(),
 
-  body('pilot').optional().isBoolean().withMessage('Pilot must be a boolean'),
-
   body('observations')
     .optional()
     .isLength({ max: 1000 })
     .withMessage('Observations must have maximum 1000 characters')
     .trim(),
-
-  body('priority')
-    .optional()
-    .isIn(['green', 'yellow', 'red'])
-    .withMessage('Priority must be: green, yellow, or red'),
 
   body('status')
     .optional()
@@ -706,15 +692,6 @@ const validateStatusUpdateProductionOrder = [
     .withMessage(
       'Status must be: CREATED, PILOT_PRODUCTION, PILOT_SENT, PILOT_APPROVED, PRODUCTION_STARTED, or FINALIZED'
     )
-];
-
-// Validation for priority update
-const validatePriorityUpdateProductionOrder = [
-  body('priority')
-    .notEmpty()
-    .withMessage('Priority is required')
-    .isIn(['green', 'yellow', 'red'])
-    .withMessage('Priority must be: green, yellow, or red')
 ];
 
 // Validations for creating production sheet
@@ -1030,7 +1007,6 @@ module.exports = {
   validateCreateProductionOrder,
   validateUpdateProductionOrder,
   validateStatusUpdateProductionOrder,
-  validatePriorityUpdateProductionOrder,
   validateCreateProductionSheet,
   validateUpdateProductionSheet,
   validateStageUpdateProductionSheet,

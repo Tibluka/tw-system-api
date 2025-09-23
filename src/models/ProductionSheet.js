@@ -86,7 +86,7 @@ productionSheetSchema.set('toObject', {
 productionSheetSchema.pre(/^find/, function() {
   this.populate({
     path: 'productionOrder',
-    select: 'developmentId internalReference status fabricType pilot observations priority active',
+    select: 'developmentId internalReference status fabricType observations priority active',
     populate: {
       path: 'development',
       select: 'clientId clientReference description pieceImage variants productionType status',

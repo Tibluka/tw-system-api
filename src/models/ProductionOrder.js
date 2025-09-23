@@ -31,21 +31,10 @@ const productionOrderSchema = new mongoose.Schema({
     maxlength: [100, 'Fabric type must have maximum 100 characters']
   },
 
-  pilot: {
-    type: Boolean,
-    default: false
-  },
-
   observations: {
     type: String,
     trim: true,
     maxlength: [1000, 'Observations must have maximum 1000 characters']
-  },
-
-  priority: {
-    type: String,
-    enum: ['green', 'yellow', 'red'],
-    default: 'green'
   },
 
   // CONTROL FIELDS
@@ -126,16 +115,6 @@ productionOrderSchema.methods.getFormattedStatus = function() {
   return statusMap[this.status] || this.status;
 };
 
-// Method to get formatted priority
-productionOrderSchema.methods.getFormattedPriority = function() {
-  const priorityMap = {
-    'green': 'Verde',
-    'yellow': 'Amarelo',
-    'red': 'Vermelho'
-  };
-  return priorityMap[this.priority] || this.priority;
-};
-
 // Method to check if can be approved
 productionOrderSchema.methods.canBeApproved = function() {
   return this.status === 'awaiting_approval';
@@ -157,15 +136,6 @@ productionOrderSchema.statics.getStatistics = async function() {
     }
   ]);
   
-  const priorityStats = await this.aggregate([
-    {
-      $group: {
-        _id: '$priority',
-        count: { $sum: 1 }
-      }
-    }
-  ]);
-  
   const statusResult = {
     total: 0,
     CREATED: 0,
@@ -176,24 +146,13 @@ productionOrderSchema.statics.getStatistics = async function() {
     FINALIZED: 0
   };
   
-  const priorityResult = {
-    green: 0,
-    yellow: 0,
-    red: 0
-  };
-  
   stats.forEach(stat => {
     statusResult[stat._id] = stat.count;
     statusResult.total += stat.count;
   });
   
-  priorityStats.forEach(stat => {
-    priorityResult[stat._id] = stat.count;
-  });
-  
   return {
-    status: statusResult,
-    priority: priorityResult
+    status: statusResult
   };
 };
 
@@ -209,7 +168,6 @@ productionOrderSchema.statics.getByDevelopment = async function(developmentId) {
 productionOrderSchema.index({ internalReference: 1 });
 productionOrderSchema.index({ developmentId: 1 });
 productionOrderSchema.index({ status: 1 });
-productionOrderSchema.index({ priority: 1 });
 productionOrderSchema.index({ active: 1 });
 productionOrderSchema.index({ createdAt: -1 });
 productionOrderSchema.index({ fabricType: 'text', observations: 'text' });

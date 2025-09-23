@@ -37,12 +37,7 @@ class ProductionOrderController {
       if (status) {
         query.status = status;
       }
-      
-      // Filter by priority
-      if (priority) {
-        query.priority = priority;
-      }
-      
+   
       // Filter by development
       if (developmentId) {
         query.developmentId = developmentId;
@@ -347,61 +342,6 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error updating status',
-        error: error.message
-      });
-    }
-  }
-
-  // PATCH /production-orders/:id/priority - Update only priority
-  async updatePriority(req, res) {
-    try {
-      const { id } = req.params;
-      const { priority } = req.body;
-
-      if (!priority) {
-        return res.status(400).json({
-          success: false,
-          message: 'Priority is required'
-        });
-      }
-
-      const validPriorities = ['green', 'yellow', 'red'];
-      if (!validPriorities.includes(priority)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid priority'
-        });
-      }
-
-      const productionOrder = await ProductionOrder.findByIdAndUpdate(
-        id,
-        { priority },
-        { new: true, runValidators: true }
-      );
-
-      if (!productionOrder) {
-        return res.status(404).json({
-          success: false,
-          message: 'Production order not found'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Priority updated successfully',
-        data: productionOrder
-      });
-    } catch (error) {
-      if (error.name === 'CastError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid ID'
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Error updating priority',
         error: error.message
       });
     }

@@ -6,8 +6,7 @@ const { validateObjectId, validatePagination } = require('../middleware/validati
 const {
   validateCreateProductionOrder,
   validateUpdateProductionOrder,
-  validateStatusUpdateProductionOrder,
-  validatePriorityUpdateProductionOrder
+  validateStatusUpdateProductionOrder
 } = require('../middleware/validation');
 
 const router = express.Router();
@@ -91,7 +90,6 @@ router.patch('/:id/status',
 // @access  Private
 router.patch('/:id/priority', 
   validateObjectId,
-  validatePriorityUpdateProductionOrder,
   productionOrderController.updatePriority
 );
 
