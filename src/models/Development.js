@@ -1,62 +1,45 @@
 const mongoose = require('mongoose');
 
 const developmentSchema = new mongoose.Schema({
-  // IDENTIFIERS
-  clientReference: {
-    type: String,
-    trim: true,
-    maxlength: [100, 'Client reference must have maximum 100 characters']
-  },
-  internalReference: {
-    type: String,
-    unique: true,
-    trim: true,
-    uppercase: true,
-    maxlength: [20, 'Internal reference must have maximum 20 characters']
-  },
-  // CLIENT REFERENCE (apenas a referência, sem duplicação)
+  // CLIENT REFERENCE (virtual populate para dados completos)
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
     required: [true, 'Client is required']
   },
-  // BASIC DATA
+
+  // DADOS COPIADOS (para não depender de populate)
+  internalReference: {
+    type: String,
+    // required será preenchido automaticamente pelo middleware
+    trim: true,
+    uppercase: true,
+    unique: true,
+    sparse: true,
+    maxlength: [20, 'Internal reference must have maximum 20 characters']
+  },
+
+  // DADOS ESPECÍFICOS DO DESENVOLVIMENTO
   description: {
     type: String,
     trim: true,
+    maxlength: [500, 'Description must have maximum 500 characters']
   },
-  pieceImage: {
-    url: {
-      type: String,
-      default: null
-    },
-    publicId: {
-      type: String,
-      default: null
-    },
-    filename: {
-      type: String,
-      default: null
-    },
-    optimizedUrls: {
-      thumbnail: String,
-      small: String,
-      medium: String,
-      large: String,
-      original: String
-    },
-    uploadedAt: {
-      type: Date,
-      default: null
-    }
-  },
-  // STATUS
-  status: {
+
+  clientReference: {
     type: String,
-    enum: ['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CLOSED'],
-    default: 'CREATED'
+    trim: true,
+    maxlength: [100, 'Client reference must have maximum 100 characters']
   },
-  // VARIANTS
+
+  // IMAGEM DA PEÇA
+  pieceImage: {
+    url: { type: String, trim: true },
+    publicId: { type: String, trim: true },
+    uploadedAt: { type: Date, default: Date.now }
+  },
+
+  // VARIANTES (cores, etc)
   variants: {
     color: {
       type: String,
@@ -64,65 +47,70 @@ const developmentSchema = new mongoose.Schema({
       maxlength: [50, 'Color must have maximum 50 characters']
     }
   },
-  // PRODUCTION TYPE
+
+  // NOVO PRODUCTION TYPE - ESTRUTURA SIMPLIFICADA
   productionType: {
-    rotary: {
-      enabled: { 
-        type: Boolean, 
-        default: false 
-      },
-      negotiatedPrice: { 
-        type: Number,
-        trim: true
+    type: {
+      type: String,
+      enum: ['rotary', 'localized'],
+      required: [true, 'Production type is required']
+    },
+    meters: {
+      type: Number,
+      min: [0.1, 'Meters must be at least 0.1'],
+      validate: {
+        validator: function(value) {
+          // Metros obrigatório apenas para rotary
+          if (this.productionType?.type === 'rotary') {
+            return value != null && value >= 0.1;
+          }
+          return true;
+        },
+        message: 'Meters is required for rotary production type'
       }
     },
-    localized: {
-      enabled: { 
-        type: Boolean, 
-        default: false 
+    sizes: [{
+      size: {
+        type: String,
+        required: [true, 'Size name is required'],
+        trim: true,
+        maxlength: [10, 'Size name must have maximum 10 characters']
       },
-      sizes: {
-        xs: { type: Number, default: 0, min: 0 },
-        s: { type: Number, default: 0, min: 0 },
-        m: { type: Number, default: 0, min: 0 },
-        l: { type: Number, default: 0, min: 0 },
-        xl: { type: Number, default: 0, min: 0 }
+      value: {
+        type: Number,
+        required: [true, 'Size value is required'],
+        min: [1, 'Size value must be at least 1']
       }
+    }],
+    // Validação customizada para sizes
+    validate: {
+      validator: function(productionType) {
+        if (productionType.type === 'localized') {
+          return productionType.sizes && productionType.sizes.length > 0;
+        }
+        return true;
+      },
+      message: 'Sizes array is required for localized production type'
     }
   },
+
+  // STATUS DO DESENVOLVIMENTO
+  status: {
+    type: String,
+    enum: ['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'],
+    default: 'CREATED'
+  },
+
   // CONTROL FIELDS
   active: {
     type: Boolean,
     default: true
   }
 }, {
-  timestamps: true,
-  versionKey: false
+  timestamps: true
 });
 
-// Middleware para limpar URLs otimizadas quando imagem é removida
-developmentSchema.pre('findOneAndUpdate', function() {
-  this.getUpdate();
-});
-
-// Virtual para verificar se tem imagem
-developmentSchema.virtual('hasImage').get(function() {
-  return !!(this.pieceImage && this.pieceImage.url);
-});
-
-// Method para obter URL da imagem otimizada
-developmentSchema.methods.getImageUrl = function(size = 'medium') {
-  if (!this.pieceImage || !this.pieceImage.optimizedUrls) {
-    return null;
-  }
-  
-  const validSizes = ['thumbnail', 'small', 'medium', 'large', 'original'];
-  const selectedSize = validSizes.includes(size) ? size : 'medium';
-  
-  return this.pieceImage.optimizedUrls[selectedSize] || this.pieceImage.url;
-};
-
-// VIRTUAL POPULATE - sempre inclui dados do cliente automaticamente
+// VIRTUAL POPULATE - sempre inclui dados do client automaticamente
 developmentSchema.virtual('client', {
   ref: 'Client',
   localField: 'clientId',
@@ -130,7 +118,7 @@ developmentSchema.virtual('client', {
   justOne: true
 });
 
-// Garantir que virtuals sejam incluídos no JSON e Object
+// Garantir que virtuals sejam incluídos no JSON e Object, sem versionKey
 developmentSchema.set('toJSON', { 
   virtuals: true,
   versionKey: false 
@@ -140,51 +128,43 @@ developmentSchema.set('toObject', {
   versionKey: false 
 });
 
-// Middleware para sempre popular cliente automaticamente
+// Middleware para sempre popular client automaticamente
 developmentSchema.pre(/^find/, function() {
   this.populate({
     path: 'client',
-    select: 'companyName cnpj contact values active'
+    select: 'companyName cnpj contact values acronym'
   });
 });
 
-// Generate internal reference before saving
+// Generate unique internalReference before saving
 developmentSchema.pre('save', async function(next) {
-  if (this.isNew && !this.internalReference) {
+  if (this.isNew) {
     try {
-      // Get current year (last 2 digits)
-      const year = new Date().getFullYear().toString().slice(-2);
+      const Client = mongoose.model('Client');
+      const client = await Client.findById(this.clientId);
       
-      // Get client data to get the acronym
-      const client = await mongoose.model('Client').findById(this.clientId);
       if (!client) {
-        throw new Error('Client not found');
+        return next(new Error('Client not found'));
       }
       
-      // Use client's acronym
-      const clientAcronym = client.acronym;
+      const currentYear = new Date().getFullYear().toString().slice(-2);
+      const clientAcronym = client.acronym || 'DEF';
       
-      // Get the highest sequential number for this client this year
-      const lastDevelopment = await this.constructor
-        .findOne({ 
-          clientId: this.clientId,
-          internalReference: new RegExp(`^${year}${clientAcronym}\\d{4}$`),
-          active: true
-        })
-        .sort({ internalReference: -1 });
+      // Find the last development for this year and client
+      const lastDevelopment = await this.constructor.findOne({
+        internalReference: new RegExp(`^${currentYear}${clientAcronym}\\d{4}$`)
+      }).sort({ internalReference: -1 });
       
       let sequential = 1;
-      if (lastDevelopment) {
-        // Extract the sequential number from the last reference
+      if (lastDevelopment && lastDevelopment.internalReference) {
         const lastSequential = parseInt(lastDevelopment.internalReference.slice(-4));
         sequential = lastSequential + 1;
       }
       
-      // Format with 4 digits: 0001, 0002, etc.
       const sequentialFormatted = sequential.toString().padStart(4, '0');
       
       // Final format: 25ABC0001
-      this.internalReference = `${year}${clientAcronym}${sequentialFormatted}`;
+      this.internalReference = `${currentYear}${clientAcronym}${sequentialFormatted}`;
       
     } catch (error) {
       return next(error);
@@ -193,14 +173,45 @@ developmentSchema.pre('save', async function(next) {
   next();
 });
 
-// Validation: at least one production type must be enabled
+// Validação customizada no pre-save para production type
 developmentSchema.pre('save', function(next) {
-  const { rotary, localized } = this.productionType;
-  
-  if (!rotary.enabled && !localized.enabled) {
-    return next(new Error('At least one production type must be enabled'));
+  if (!this.productionType || !this.productionType.type) {
+    return next(new Error('Production type is required'));
   }
-  
+
+  const { type, meters, sizes } = this.productionType;
+
+  // Validar rotary
+  if (type === 'rotary') {
+    if (!meters || meters < 0.1) {
+      return next(new Error('Meters is required and must be at least 0.1 for rotary production'));
+    }
+  }
+
+  // Validar localized
+  if (type === 'localized') {
+    if (!sizes || sizes.length === 0) {
+      return next(new Error('At least one size is required for localized production'));
+    }
+
+    // Validar cada size
+    for (let sizeItem of sizes) {
+      if (!sizeItem.size || !sizeItem.size.trim()) {
+        return next(new Error('Size name is required'));
+      }
+      if (!sizeItem.value || sizeItem.value < 1) {
+        return next(new Error('Size value must be at least 1'));
+      }
+    }
+
+    // Validar nomes de tamanhos únicos
+    const sizeNames = sizes.map(s => s.size.trim().toUpperCase());
+    const uniqueSizeNames = [...new Set(sizeNames)];
+    if (sizeNames.length !== uniqueSizeNames.length) {
+      return next(new Error('Size names must be unique'));
+    }
+  }
+
   next();
 });
 
@@ -215,9 +226,40 @@ developmentSchema.methods.getFormattedStatus = function() {
   return statusMap[this.status] || this.status;
 };
 
+// Method to get formatted production type
+developmentSchema.methods.getFormattedProductionType = function() {
+  if (!this.productionType?.type) return 'Não definido';
+  
+  const typeMap = {
+    'rotary': 'Rotativa',
+    'localized': 'Localizada'
+  };
+  
+  return typeMap[this.productionType.type] || this.productionType.type;
+};
+
+// Method to get production summary
+developmentSchema.methods.getProductionSummary = function() {
+  if (!this.productionType) return 'Não definido';
+
+  const { type, meters, sizes } = this.productionType;
+
+  if (type === 'rotary') {
+    return `${meters}m (Rotativa)`;
+  }
+
+  if (type === 'localized' && sizes) {
+    const totalPieces = sizes.reduce((sum, item) => sum + item.value, 0);
+    const sizesList = sizes.map(item => `${item.size}: ${item.value}`).join(', ');
+    return `${totalPieces} peças (${sizesList})`;
+  }
+
+  return 'Não definido';
+};
+
 // Method to check if can be approved
 developmentSchema.methods.canBeApproved = function() {
-  return this.status === 'awaiting_approval';
+  return this.status === 'AWAITING_APPROVAL';
 };
 
 // Method to check if can create production order
@@ -236,26 +278,52 @@ developmentSchema.statics.getStatistics = async function() {
     }
   ]);
   
-  const result = {
+  const productionTypeStats = await this.aggregate([
+    {
+      $group: {
+        _id: '$productionType.type',
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+  
+  const statusResult = {
     total: 0,
-    started: 0,
-    awaiting_approval: 0,
-    approved: 0,
-    refused: 0
+    CREATED: 0,
+    AWAITING_APPROVAL: 0,
+    APPROVED: 0,
+    CANCELED: 0
+  };
+
+  const productionTypeResult = {
+    rotary: 0,
+    localized: 0
   };
   
   stats.forEach(stat => {
-    result[stat._id] = stat.count;
-    result.total += stat.count;
+    if (stat._id) {
+      statusResult[stat._id] = stat.count;
+      statusResult.total += stat.count;
+    }
+  });
+
+  productionTypeStats.forEach(stat => {
+    if (stat._id) {
+      productionTypeResult[stat._id] = stat.count;
+    }
   });
   
-  return result;
+  return {
+    status: statusResult,
+    productionType: productionTypeResult
+  };
 };
 
 // Indexes for optimized search
 developmentSchema.index({ internalReference: 1 });
 developmentSchema.index({ clientId: 1 });
 developmentSchema.index({ status: 1 });
+developmentSchema.index({ 'productionType.type': 1 });
 developmentSchema.index({ active: 1 });
 developmentSchema.index({ createdAt: -1 });
 developmentSchema.index({ 'clientReference': 'text', 'description': 'text' });
