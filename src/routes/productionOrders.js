@@ -85,14 +85,6 @@ router.patch('/:id/status',
   productionOrderController.updateStatus
 );
 
-// @route   PATCH /api/v1/production-orders/:id/priority
-// @desc    Update only production order priority
-// @access  Private
-router.patch('/:id/priority', 
-  validateObjectId,
-  productionOrderController.updatePriority
-);
-
 // @route   POST /api/v1/production-orders/:id/activate
 // @desc    Reactivate production order
 // @access  Private

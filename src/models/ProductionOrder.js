@@ -8,6 +8,37 @@ const productionOrderSchema = new mongoose.Schema({
     required: [true, 'Development is required']
   },
 
+   // NOVO: PRODUCTION TYPE COM QUANTIDADES
+   productionType: {
+    rotary: {
+      enabled: { 
+        type: Boolean, 
+        default: false 
+      },
+      negotiatedPrice: { 
+        type: Number,
+        min: [0, 'Negotiated price must be positive']
+      },
+      meters: {
+        type: Number,
+        min: [0.1, 'Meters must be at least 0.1']
+      }
+    },
+    localized: {
+      enabled: { 
+        type: Boolean, 
+        default: false 
+      },
+      sizes: {
+        xs: { type: Number, default: 0, min: 0 },
+        s: { type: Number, default: 0, min: 0 },
+        m: { type: Number, default: 0, min: 0 },
+        l: { type: Number, default: 0, min: 0 },
+        xl: { type: Number, default: 0, min: 0 }
+      }
+    }
+  },
+
   // DADOS COPIADOS (para não depender de populate)
   internalReference: {
     type: String,
@@ -62,6 +93,29 @@ productionOrderSchema.set('toJSON', {
 productionOrderSchema.set('toObject', { 
   virtuals: true,
   versionKey: false 
+});
+
+productionOrderSchema.pre('save', function(next) {
+  const { rotary, localized } = this.productionType;
+  
+  if (!rotary.enabled && !localized.enabled) {
+    return next(new Error('At least one production type must be enabled'));
+  }
+  
+  // Se rotary habilitado, deve ter metros
+  if (rotary.enabled && !rotary.meters) {
+    return next(new Error('Meters is required for rotary production'));
+  }
+  
+  // Se localized habilitado, deve ter pelo menos um tamanho
+  if (localized.enabled) {
+    const { xs, s, m, l, xl } = localized.sizes;
+    if (xs + s + m + l + xl === 0) {
+      return next(new Error('At least one size must be greater than 0 for localized production'));
+    }
+  }
+  
+  next();
 });
 
 // Middleware para sempre popular development automaticamente

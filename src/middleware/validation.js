@@ -627,6 +627,50 @@ const validateCreateProductionOrder = [
     .withMessage('Development ID is required')
     .isMongoId()
     .withMessage('Development ID must be a valid MongoDB ObjectId'),
+    body('productionType.rotary.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Rotary enabled must be a boolean'),
+  
+  body('productionType.rotary.meters')
+    .optional()
+    .isFloat({ min: 0.1 })
+    .withMessage('Rotary meters must be at least 0.1'),
+  
+  body('productionType.rotary.negotiatedPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Negotiated price must be positive'),
+  
+  body('productionType.localized.enabled')
+    .optional()
+    .isBoolean()
+    .withMessage('Localized enabled must be a boolean'),
+  
+  body('productionType.localized.sizes.xs')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XS size must be a positive integer'),
+  
+  body('productionType.localized.sizes.s')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('S size must be a positive integer'),
+  
+  body('productionType.localized.sizes.m')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('M size must be a positive integer'),
+  
+  body('productionType.localized.sizes.l')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('L size must be a positive integer'),
+  
+  body('productionType.localized.sizes.xl')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('XL size must be a positive integer'),
 
   body('fabricType')
     .notEmpty()
@@ -656,6 +700,51 @@ const validateUpdateProductionOrder = [
     .isMongoId()
     .withMessage('Development ID must be a valid MongoDB ObjectId'),
 
+    body('productionType.rotary.enabled')
+  .optional()
+  .isBoolean()
+  .withMessage('Rotary enabled must be a boolean'),
+
+body('productionType.rotary.meters')
+  .optional()
+  .isFloat({ min: 0.1 })
+  .withMessage('Rotary meters must be at least 0.1'),
+
+body('productionType.rotary.negotiatedPrice')
+  .optional()
+  .isFloat({ min: 0 })
+  .withMessage('Negotiated price must be positive'),
+
+body('productionType.localized.enabled')
+  .optional()
+  .isBoolean()
+  .withMessage('Localized enabled must be a boolean'),
+
+body('productionType.localized.sizes.xs')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('XS size must be a positive integer'),
+
+body('productionType.localized.sizes.s')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('S size must be a positive integer'),
+
+body('productionType.localized.sizes.m')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('M size must be a positive integer'),
+
+body('productionType.localized.sizes.l')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('L size must be a positive integer'),
+
+body('productionType.localized.sizes.xl')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('XL size must be a positive integer'),
+  
   body('fabricType')
     .optional()
     .isLength({ min: 2, max: 100 })
