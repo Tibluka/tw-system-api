@@ -102,18 +102,7 @@ const developmentSchema = new mongoose.Schema({
 
 // Middleware para limpar URLs otimizadas quando imagem é removida
 developmentSchema.pre('findOneAndUpdate', function() {
-  const update = this.getUpdate();
-  
-  // Se pieceImage.url está sendo setado como null, limpar todas as URLs
-  if (update.pieceImage && update.pieceImage.url === null) {
-    update.pieceImage = {
-      url: null,
-      publicId: null,
-      filename: null,
-      optimizedUrls: {},
-      uploadedAt: null
-    };
-  }
+  this.getUpdate();
 });
 
 // Virtual para verificar se tem imagem
