@@ -48,50 +48,11 @@ const developmentSchema = new mongoose.Schema({
     }
   },
 
-  // NOVO PRODUCTION TYPE - ESTRUTURA SIMPLIFICADA
+  // PRODUCTION TYPE - APENAS O TIPO NO DEVELOPMENT
   productionType: {
-    type: {
-      type: String,
-      enum: ['rotary', 'localized'],
-      required: [true, 'Production type is required']
-    },
-    meters: {
-      type: Number,
-      min: [0.1, 'Meters must be at least 0.1'],
-      validate: {
-        validator: function(value) {
-          // Metros obrigatório apenas para rotary
-          if (this.productionType?.type === 'rotary') {
-            return value != null && value >= 0.1;
-          }
-          return true;
-        },
-        message: 'Meters is required for rotary production type'
-      }
-    },
-    sizes: [{
-      size: {
-        type: String,
-        required: [true, 'Size name is required'],
-        trim: true,
-        maxlength: [10, 'Size name must have maximum 10 characters']
-      },
-      value: {
-        type: Number,
-        required: [true, 'Size value is required'],
-        min: [1, 'Size value must be at least 1']
-      }
-    }],
-    // Validação customizada para sizes
-    validate: {
-      validator: function(productionType) {
-        if (productionType.type === 'localized') {
-          return productionType.sizes && productionType.sizes.length > 0;
-        }
-        return true;
-      },
-      message: 'Sizes array is required for localized production type'
-    }
+    type: String,
+    enum: ['rotary', 'localized'],
+    required: [true, 'Production type is required']
   },
 
   // STATUS DO DESENVOLVIMENTO
@@ -173,48 +134,6 @@ developmentSchema.pre('save', async function(next) {
   next();
 });
 
-// Validação customizada no pre-save para production type
-developmentSchema.pre('save', function(next) {
-  if (!this.productionType || !this.productionType.type) {
-    return next(new Error('Production type is required'));
-  }
-
-  const { type, meters, sizes } = this.productionType;
-
-  // Validar rotary
-  if (type === 'rotary') {
-    if (!meters || meters < 0.1) {
-      return next(new Error('Meters is required and must be at least 0.1 for rotary production'));
-    }
-  }
-
-  // Validar localized
-  if (type === 'localized') {
-    if (!sizes || sizes.length === 0) {
-      return next(new Error('At least one size is required for localized production'));
-    }
-
-    // Validar cada size
-    for (let sizeItem of sizes) {
-      if (!sizeItem.size || !sizeItem.size.trim()) {
-        return next(new Error('Size name is required'));
-      }
-      if (!sizeItem.value || sizeItem.value < 1) {
-        return next(new Error('Size value must be at least 1'));
-      }
-    }
-
-    // Validar nomes de tamanhos únicos
-    const sizeNames = sizes.map(s => s.size.trim().toUpperCase());
-    const uniqueSizeNames = [...new Set(sizeNames)];
-    if (sizeNames.length !== uniqueSizeNames.length) {
-      return next(new Error('Size names must be unique'));
-    }
-  }
-
-  next();
-});
-
 // Method to get formatted status
 developmentSchema.methods.getFormattedStatus = function() {
   const statusMap = {
@@ -228,33 +147,11 @@ developmentSchema.methods.getFormattedStatus = function() {
 
 // Method to get formatted production type
 developmentSchema.methods.getFormattedProductionType = function() {
-  if (!this.productionType?.type) return 'Não definido';
-  
   const typeMap = {
     'rotary': 'Rotativa',
     'localized': 'Localizada'
   };
-  
-  return typeMap[this.productionType.type] || this.productionType.type;
-};
-
-// Method to get production summary
-developmentSchema.methods.getProductionSummary = function() {
-  if (!this.productionType) return 'Não definido';
-
-  const { type, meters, sizes } = this.productionType;
-
-  if (type === 'rotary') {
-    return `${meters}m (Rotativa)`;
-  }
-
-  if (type === 'localized' && sizes) {
-    const totalPieces = sizes.reduce((sum, item) => sum + item.value, 0);
-    const sizesList = sizes.map(item => `${item.size}: ${item.value}`).join(', ');
-    return `${totalPieces} peças (${sizesList})`;
-  }
-
-  return 'Não definido';
+  return typeMap[this.productionType] || this.productionType;
 };
 
 // Method to check if can be approved
@@ -281,7 +178,7 @@ developmentSchema.statics.getStatistics = async function() {
   const productionTypeStats = await this.aggregate([
     {
       $group: {
-        _id: '$productionType.type',
+        _id: '$productionType',
         count: { $sum: 1 }
       }
     }
@@ -323,7 +220,7 @@ developmentSchema.statics.getStatistics = async function() {
 developmentSchema.index({ internalReference: 1 });
 developmentSchema.index({ clientId: 1 });
 developmentSchema.index({ status: 1 });
-developmentSchema.index({ 'productionType.type': 1 });
+developmentSchema.index({ productionType: 1 });
 developmentSchema.index({ active: 1 });
 developmentSchema.index({ createdAt: -1 });
 developmentSchema.index({ 'clientReference': 'text', 'description': 'text' });
