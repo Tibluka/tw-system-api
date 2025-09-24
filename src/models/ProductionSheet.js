@@ -86,7 +86,7 @@ productionSheetSchema.set('toObject', {
 productionSheetSchema.pre(/^find/, function() {
   this.populate({
     path: 'productionOrder',
-    select: 'developmentId internalReference status fabricType observations priority active',
+    select: 'developmentId internalReference status fabricType observations productionType active',
     populate: {
       path: 'development',
       select: 'clientId clientReference description pieceImage variants productionType status',
@@ -136,12 +136,12 @@ productionSheetSchema.methods.getMachineName = function() {
 
 // Method to check if production is finished
 productionSheetSchema.methods.isFinished = function() {
-  return this.stage === 'finished';
+  return this.stage === 'FINISHED';
 };
 
 // Method to advance to next stage
 productionSheetSchema.methods.advanceStage = function() {
-  const stageOrder = ['printing', 'calendering', 'finished'];
+  const stageOrder = ['PRINTING', 'CALENDERING', 'FINISHED'];
   const currentIndex = stageOrder.indexOf(this.stage);
   
   if (currentIndex < stageOrder.length - 1) {

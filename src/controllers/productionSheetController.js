@@ -304,8 +304,7 @@ class ProductionSheetController {
 
       const productionSheet = await ProductionSheet.findByIdAndUpdate(
         id,
-        { stage },
-        { new: true, runValidators: true }
+        { stage }
       );
 
       if (!productionSheet) {
@@ -314,6 +313,8 @@ class ProductionSheetController {
           message: 'Production sheet not found'
         });
       }
+
+      await productionSheet.save();
 
       res.json({
         success: true,
