@@ -48,12 +48,32 @@ const developmentSchema = new mongoose.Schema({
     }
   },
 
-  // PRODUCTION TYPE - APENAS O TIPO NO DEVELOPMENT
-  productionType: {
+ // SUBSTITUIR esta parte no arquivo src/models/Development.js:
+
+// PRODUCTION TYPE - NOVO FORMATO COMO OBJETO
+productionType: {
+  type: {
     type: String,
     enum: ['rotary', 'localized'],
     required: [true, 'Production type is required']
   },
+  meters: {
+    type: Number,
+    min: [0, 'Meters must be positive']
+  },
+  sizes: [{
+    size: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    value: {
+      type: Number,
+      required: true,
+      min: [0, 'Size value must be positive']
+    }
+  }]
+},
 
   // STATUS DO DESENVOLVIMENTO
   status: {

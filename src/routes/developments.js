@@ -7,7 +7,7 @@ const { validateObjectId, validatePagination } = require('../middleware/validati
 const {
   validateCreateDevelopment,
   validateUpdateDevelopment,
-  validateProductionType,
+  validateAndTransformProductionType,
   validateStatusUpdate
 } = require('../middleware/validation');
 
@@ -79,7 +79,7 @@ router.get('/:id',
 // @access  Private
 router.post('/', 
   validateCreateDevelopment,
-  validateProductionType,
+  validateAndTransformProductionType,
   developmentController.store
 );
 
@@ -89,6 +89,7 @@ router.post('/',
 router.put('/:id', 
   validateObjectId,
   validateUpdateDevelopment,
+  validateAndTransformProductionType,
   developmentController.update
 );
 

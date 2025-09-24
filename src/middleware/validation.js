@@ -442,6 +442,7 @@ const validateUpdateClient = [
   body('active').optional().isBoolean().withMessage('Campo active deve ser verdadeiro ou falso')
 ];
 
+
 const validateCreateDevelopment = [
   body('clientId')
     .notEmpty()
@@ -467,46 +468,28 @@ const validateCreateDevelopment = [
     .withMessage('Color must have maximum 50 characters')
     .trim(),
 
-  // Production Type Validations
-  body('productionType.rotary.enabled')
-    .optional()
-    .isBoolean()
-    .withMessage('Rotary enabled must be a boolean'),
+  // NOVA VALIDAÇÃO - Production Type como objeto
+  body('productionType')
+    .notEmpty()
+    .withMessage('Production type is required')
+    .isObject()
+    .withMessage('Production type must be an object'),
 
-  body('productionType.rotary.negotiatedPrice')
+  body('productionType.type')
+    .notEmpty()
+    .withMessage('Production type.type is required')
+    .isIn(['rotary', 'localized'])
+    .withMessage('Production type.type must be: rotary or localized'),
+
+  body('productionType.meters')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Negotiated price must be a positive number'),
+    .withMessage('Production type meters must be a positive number'),
 
-  body('productionType.localized.enabled')
+  body('productionType.sizes')
     .optional()
-    .isBoolean()
-    .withMessage('Localized enabled must be a boolean'),
-
-  body('productionType.localized.sizes.xs')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XS size must be a positive integer'),
-
-  body('productionType.localized.sizes.s')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('S size must be a positive integer'),
-
-  body('productionType.localized.sizes.m')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('M size must be a positive integer'),
-
-  body('productionType.localized.sizes.l')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('L size must be a positive integer'),
-
-  body('productionType.localized.sizes.xl')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XL size must be a positive integer'),
+    .isArray()
+    .withMessage('Production type sizes must be an array'),
 
   body('status')
     .optional()
@@ -516,7 +499,6 @@ const validateCreateDevelopment = [
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
 
-// Validations for updating development
 const validateUpdateDevelopment = [
   body('clientId').optional().isMongoId().withMessage('Client ID must be a valid MongoDB ObjectId'),
 
@@ -538,54 +520,72 @@ const validateUpdateDevelopment = [
     .withMessage('Color must have maximum 50 characters')
     .trim(),
 
-  // Production Type Validations
-  body('productionType.rotary.enabled')
+  // NOVA VALIDAÇÃO - Production Type como objeto (opcional para update)
+  body('productionType')
     .optional()
-    .isBoolean()
-    .withMessage('Rotary enabled must be a boolean'),
+    .isObject()
+    .withMessage('Production type must be an object'),
 
-  body('productionType.rotary.negotiatedPrice')
+  body('productionType.type')
+    .optional()
+    .isIn(['rotary', 'localized'])
+    .withMessage('Production type.type must be: rotary or localized'),
+
+  body('productionType.meters')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Negotiated price must be a positive number'),
+    .withMessage('Production type meters must be a positive number'),
 
-  body('productionType.localized.enabled')
+  body('productionType.sizes')
     .optional()
-    .isBoolean()
-    .withMessage('Localized enabled must be a boolean'),
-
-  body('productionType.localized.sizes.xs')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XS size must be a positive integer'),
-
-  body('productionType.localized.sizes.s')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('S size must be a positive integer'),
-
-  body('productionType.localized.sizes.m')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('M size must be a positive integer'),
-
-  body('productionType.localized.sizes.l')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('L size must be a positive integer'),
-
-  body('productionType.localized.sizes.xl')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XL size must be a positive integer'),
+    .isArray()
+    .withMessage('Production type sizes must be an array'),
 
   body('status')
     .optional()
-    .isIn('CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED')
+    .isIn(['CREATED', 'AWAITING_APPROVAL', 'APPROVED', 'CANCELED'])
     .withMessage('Status must be: CREATED, AWAITING_APPROVAL, APPROVED, CANCELED'),
 
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
+
+// MIDDLEWARE CUSTOMIZADO para validação do productionType
+const validateAndTransformProductionType = (req, res, next) => {
+  const { productionType } = req.body;
+
+  if (!productionType) {
+    return res.status(400).json({
+      success: false,
+      message: 'Production type is required'
+    });
+  }
+
+  // Validar se é um objeto
+  if (typeof productionType !== 'object' || productionType === null) {
+    return res.status(400).json({
+      success: false,
+      message: 'Production type must be an object'
+    });
+  }
+
+  // Validar se tem a propriedade type
+  if (!productionType.type) {
+    return res.status(400).json({
+      success: false,
+      message: 'Production type.type is required'
+    });
+  }
+
+  // Validar se o type é válido
+  if (!['rotary', 'localized'].includes(productionType.type)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Production type.type must be: rotary or localized'
+    });
+  }
+
+  next();
+};
 
 // Custom validation middleware for production type
 const validateProductionType = (req, res, next) => {
@@ -1090,10 +1090,10 @@ module.exports = {
   validateUpdateClient,
   validateCreateClient,
   validateStatusUpdate,
-  validateProductionType,
   validateUpdateDevelopment,
   validateCreateDevelopment,
   validateCreateProductionOrder,
+  validateAndTransformProductionType,
   validateUpdateProductionOrder,
   validateStatusUpdateProductionOrder,
   validateCreateProductionSheet,
