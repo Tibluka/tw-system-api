@@ -48,32 +48,39 @@ const developmentSchema = new mongoose.Schema({
     }
   },
 
- // SUBSTITUIR esta parte no arquivo src/models/Development.js:
-
-// PRODUCTION TYPE - NOVO FORMATO COMO OBJETO
-productionType: {
-  type: {
-    type: String,
-    enum: ['rotary', 'localized'],
-    required: [true, 'Production type is required']
-  },
-  meters: {
-    type: Number,
-    min: [0, 'Meters must be positive']
-  },
-  sizes: [{
-    size: {
+  // PRODUCTION TYPE - NOVA ESTRUTURA COM OBJETO COMPLETO
+  productionType: {
+    type: {
       type: String,
-      required: true,
-      trim: true
+      enum: ['rotary', 'localized'],
+      required: [true, 'Production type is required']
     },
-    value: {
+    meters: {
       type: Number,
-      required: true,
-      min: [0, 'Size value must be positive']
+      min: [0, 'Meters must be positive']
+    },
+    additionalInfo: {
+      variant: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Variant must have maximum 100 characters']
+      },
+      sizes: [{
+        size: {
+          type: String,
+          required: true,
+          trim: true,
+          uppercase: true,
+          enum: ['PP', 'P', 'M', 'G', 'G1', 'G2']
+        },
+        value: {
+          type: Number,
+          required: true,
+          min: [0, 'Size value must be positive']
+        }
+      }]
     }
-  }]
-},
+  },
 
   // STATUS DO DESENVOLVIMENTO
   status: {
@@ -107,6 +114,32 @@ developmentSchema.set('toJSON', {
 developmentSchema.set('toObject', { 
   virtuals: true,
   versionKey: false 
+});
+
+// Middleware de validação customizada - ADICIONADO
+developmentSchema.pre('save', function(next) {
+  // Validar estrutura do productionType
+  if (this.productionType) {
+    if (this.productionType.type === 'rotary') {
+      // Para rotary, meters é obrigatório
+      if (this.productionType.meters === undefined || this.productionType.meters < 0) {
+        return next(new Error('Meters is required and must be positive for rotary production type'));
+      }
+    }
+
+    if (this.productionType.type === 'localized') {
+      // Para localized, additionalInfo é obrigatório
+      if (!this.productionType.additionalInfo) {
+        return next(new Error('Additional info is required for localized production type'));
+      }
+      
+      if (this.productionType.additionalInfo.variant === undefined) {
+        return next(new Error('Variant is required in additional info for localized production type'));
+      }
+    }
+  }
+
+  next();
 });
 
 // Middleware para sempre popular client automaticamente
@@ -165,13 +198,13 @@ developmentSchema.methods.getFormattedStatus = function() {
   return statusMap[this.status] || this.status;
 };
 
-// Method to get formatted production type
+// Method to get formatted production type - ATUALIZADO
 developmentSchema.methods.getFormattedProductionType = function() {
   const typeMap = {
     'rotary': 'Rotativa',
     'localized': 'Localizada'
   };
-  return typeMap[this.productionType] || this.productionType;
+  return typeMap[this.productionType.type] || this.productionType.type;
 };
 
 // Method to check if can be approved
@@ -184,7 +217,7 @@ developmentSchema.methods.canCreateProductionOrder = function() {
   return this.status === 'APPROVED';
 };
 
-// Static method to get development statistics
+// Static method to get development statistics - ATUALIZADO
 developmentSchema.statics.getStatistics = async function() {
   const stats = await this.aggregate([
     {
@@ -198,7 +231,7 @@ developmentSchema.statics.getStatistics = async function() {
   const productionTypeStats = await this.aggregate([
     {
       $group: {
-        _id: '$productionType',
+        _id: '$productionType.type', // MUDANÇA: agora acessa productionType.type
         count: { $sum: 1 }
       }
     }
@@ -236,11 +269,11 @@ developmentSchema.statics.getStatistics = async function() {
   };
 };
 
-// Indexes for optimized search
+// Indexes for optimized search - ATUALIZADO
 developmentSchema.index({ internalReference: 1 });
 developmentSchema.index({ clientId: 1 });
 developmentSchema.index({ status: 1 });
-developmentSchema.index({ productionType: 1 });
+developmentSchema.index({ 'productionType.type': 1 }); // MUDANÇA: agora indexa productionType.type
 developmentSchema.index({ active: 1 });
 developmentSchema.index({ createdAt: -1 });
 developmentSchema.index({ 'clientReference': 'text', 'description': 'text' });

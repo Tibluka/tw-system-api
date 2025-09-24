@@ -475,21 +475,31 @@ const validateCreateDevelopment = [
     .isObject()
     .withMessage('Production type must be an object'),
 
-  body('productionType.type')
-    .notEmpty()
-    .withMessage('Production type.type is required')
-    .isIn(['rotary', 'localized'])
-    .withMessage('Production type.type must be: rotary or localized'),
+// ADICIONAR estas novas validações:
+body('productionType.meters')
+  .optional()
+  .isFloat({ min: 0 })
+  .withMessage('Meters must be a positive number'),
 
-  body('productionType.meters')
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage('Production type meters must be a positive number'),
+body('productionType.additionalInfo.variant')
+  .optional()
+  .isLength({ max: 100 })
+  .withMessage('Variant must have maximum 100 characters'),
 
-  body('productionType.sizes')
-    .optional()
-    .isArray()
-    .withMessage('Production type sizes must be an array'),
+body('productionType.additionalInfo.sizes')
+  .optional()
+  .isArray()
+  .withMessage('Sizes must be an array'),
+
+body('productionType.additionalInfo.sizes.*.size')
+  .optional()
+  .isIn(['PP', 'P', 'M', 'G', 'G1', 'G2'])
+  .withMessage('Size must be one of: PP, P, M, G, G1, G2'),
+
+body('productionType.additionalInfo.sizes.*.value')
+  .optional()
+  .isInt({ min: 0 })
+  .withMessage('Size value must be a positive integer'),
 
   body('status')
     .optional()
@@ -549,63 +559,62 @@ const validateUpdateDevelopment = [
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
 
-// MIDDLEWARE CUSTOMIZADO para validação do productionType
+// SUBSTITUIR toda a função:
 const validateAndTransformProductionType = (req, res, next) => {
   const { productionType } = req.body;
 
-  if (!productionType) {
+  if (!productionType || typeof productionType !== 'object') {
     return res.status(400).json({
       success: false,
-      message: 'Production type is required'
+      message: 'Production type is required and must be an object'
     });
   }
 
-  // Validar se é um objeto
-  if (typeof productionType !== 'object' || productionType === null) {
-    return res.status(400).json({
-      success: false,
-      message: 'Production type must be an object'
-    });
-  }
-
-  // Validar se tem a propriedade type
-  if (!productionType.type) {
-    return res.status(400).json({
-      success: false,
-      message: 'Production type.type is required'
-    });
-  }
-
-  // Validar se o type é válido
-  if (!['rotary', 'localized'].includes(productionType.type)) {
+  if (!productionType.type || !['rotary', 'localized'].includes(productionType.type)) {
     return res.status(400).json({
       success: false,
       message: 'Production type.type must be: rotary or localized'
     });
   }
 
-  next();
-};
-
-// Custom validation middleware for production type
-const validateProductionType = (req, res, next) => {
-  const { productionType } = req.body;
-
-  if (!productionType) {
-    return res.status(400).json({
-      success: false,
-      message: 'Production type is required'
-    });
+  // Validações específicas por tipo
+  if (productionType.type === 'rotary') {
+    if (productionType.meters !== undefined && (typeof productionType.meters !== 'number' || productionType.meters < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Meters must be a positive number for rotary type'
+      });
+    }
   }
 
-  const { rotary, localized } = productionType;
+  if (productionType.type === 'localized') {
+    if (productionType.additionalInfo && productionType.additionalInfo.sizes) {
+      if (!Array.isArray(productionType.additionalInfo.sizes)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sizes must be an array'
+        });
+      }
 
-  // At least one production type must be enabled
-  if (!rotary?.enabled && !localized?.enabled) {
-    return res.status(400).json({
-      success: false,
-      message: 'At least one production type must be enabled'
-    });
+      const allowedSizes = ['PP', 'P', 'M', 'G', 'G1', 'G2'];
+      for (let i = 0; i < productionType.additionalInfo.sizes.length; i++) {
+        const sizeItem = productionType.additionalInfo.sizes[i];
+        
+        if (!sizeItem.size || !allowedSizes.includes(sizeItem.size.toUpperCase())) {
+          return res.status(400).json({
+            success: false,
+            message: `Size at index ${i} must be one of: ${allowedSizes.join(', ')}`
+          });
+        }
+
+        if (typeof sizeItem.value !== 'number' || sizeItem.value < 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Size value at index ${i} must be a positive number`
+          });
+        }
+      }
+    }
   }
 
   next();

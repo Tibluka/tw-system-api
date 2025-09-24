@@ -8,34 +8,36 @@ const productionOrderSchema = new mongoose.Schema({
     required: [true, 'Development is required']
   },
 
-   // NOVO: PRODUCTION TYPE COM QUANTIDADES
-   productionType: {
-    rotary: {
-      enabled: { 
-        type: Boolean, 
-        default: false 
-      },
-      negotiatedPrice: { 
-        type: Number,
-        min: [0, 'Negotiated price must be positive']
-      },
-      meters: {
-        type: Number,
-        min: [0.1, 'Meters must be at least 0.1']
-      }
+  productionType: {
+    type: {
+      type: String,
+      enum: ['rotary', 'localized'],
+      required: [true, 'Production type is required']
     },
-    localized: {
-      enabled: { 
-        type: Boolean, 
-        default: false 
+    meters: {
+      type: Number,
+      min: [0, 'Meters must be positive']
+    },
+    additionalInfo: {
+      variant: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Variant must have maximum 100 characters']
       },
-      sizes: {
-        xs: { type: Number, default: 0, min: 0 },
-        s: { type: Number, default: 0, min: 0 },
-        m: { type: Number, default: 0, min: 0 },
-        l: { type: Number, default: 0, min: 0 },
-        xl: { type: Number, default: 0, min: 0 }
-      }
+      sizes: [{
+        size: {
+          type: String,
+          required: true,
+          trim: true,
+          uppercase: true,
+          enum: ['PP', 'P', 'M', 'G', 'G1', 'G2']
+        },
+        value: {
+          type: Number,
+          required: true,
+          min: [0, 'Size value must be positive']
+        }
+      }]
     }
   },
 
@@ -96,25 +98,23 @@ productionOrderSchema.set('toObject', {
 });
 
 productionOrderSchema.pre('save', function(next) {
-  const { rotary, localized } = this.productionType;
-  
-  if (!rotary.enabled && !localized.enabled) {
-    return next(new Error('At least one production type must be enabled'));
-  }
-  
-  // Se rotary habilitado, deve ter metros
-  if (rotary.enabled && !rotary.meters) {
-    return next(new Error('Meters is required for rotary production'));
-  }
-  
-  // Se localized habilitado, deve ter pelo menos um tamanho
-  if (localized.enabled) {
-    const { xs, s, m, l, xl } = localized.sizes;
-    if (xs + s + m + l + xl === 0) {
-      return next(new Error('At least one size must be greater than 0 for localized production'));
+  if (this.productionType) {
+    if (this.productionType.type === 'rotary') {
+      if (this.productionType.meters === undefined || this.productionType.meters < 0) {
+        return next(new Error('Meters is required and must be positive for rotary production type'));
+      }
+    }
+
+    if (this.productionType.type === 'localized') {
+      if (!this.productionType.additionalInfo) {
+        return next(new Error('Additional info is required for localized production type'));
+      }
+      
+      if (this.productionType.additionalInfo.variant === undefined) {
+        return next(new Error('Variant is required in additional info for localized production type'));
+      }
     }
   }
-  
   next();
 });
 

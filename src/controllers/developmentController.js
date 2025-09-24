@@ -163,7 +163,6 @@ class DevelopmentController {
     }
   }
 
-  // POST /developments - Create new development
   async store(req, res) {
     try {
       // Check validation errors
@@ -175,7 +174,7 @@ class DevelopmentController {
           errors: errors.array()
         });
       }
-
+  
       // Verify client exists
       const client = await Client.findById(req.body.clientId);
       if (!client) {
@@ -184,43 +183,63 @@ class DevelopmentController {
           message: 'Client not found'
         });
       }
-
+  
+      // ✅ NOVA LÓGICA - Processar productionType baseado no tipo
+      if (req.body.productionType.type === 'localized') {
+        // Se não tiver additionalInfo ou sizes, criar com tamanhos padrão
+        if (!req.body.productionType.additionalInfo) {
+          req.body.productionType.additionalInfo = {
+            variant: '',
+            sizes: [
+              { size: 'PP', value: 0 },
+              { size: 'P', value: 0 },
+              { size: 'M', value: 0 },
+              { size: 'G', value: 0 },
+              { size: 'G1', value: 0 },
+              { size: 'G2', value: 0 }
+            ]
+          };
+        }
+      }
+  
       const development = new Development(req.body);
       await development.save();
-
-      // Buscar novamente para incluir os dados do cliente (virtual populate)
-      const developmentWithClient = await Development.findById(development._id);
-
+  
+      // Retornar com populate
+      const savedDevelopment = await Development.findById(development._id);
+  
       res.status(201).json({
         success: true,
         message: 'Development created successfully',
-        data: developmentWithClient
+        data: savedDevelopment
       });
+  
     } catch (error) {
+      console.error('Error creating development:', error);
+  
       if (error.name === 'ValidationError') {
         const errors = Object.values(error.errors).map(err => ({
           field: err.path,
           message: err.message
         }));
-        
+  
         return res.status(400).json({
           success: false,
           message: 'Invalid data',
           errors
         });
       }
-
+  
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
           message: 'Internal reference already exists'
         });
       }
-
+  
       res.status(500).json({
         success: false,
-        message: 'Error creating development',
-        error: error.message
+        message: 'Internal server error'
       });
     }
   }
