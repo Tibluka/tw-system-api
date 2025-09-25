@@ -6,7 +6,23 @@ const { validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
 class ProductionReceiptController {
-  // ✅ NOVO: Método para lidar com filtro por clientId usando aggregation
+  constructor() {
+    // ✅ BIND de todos os métodos para garantir contexto correto
+    this.index = this.index.bind(this);
+    this.indexWithClientFilter = this.indexWithClientFilter.bind(this);
+    this.show = this.show.bind(this);
+    this.store = this.store.bind(this);
+    this.update = this.update.bind(this);
+    this.destroy = this.destroy.bind(this);
+    this.stats = this.stats.bind(this);
+    this.getByProductionOrder = this.getByProductionOrder.bind(this);
+    this.getOverdue = this.getOverdue.bind(this);
+    this.processPayment = this.processPayment.bind(this);
+    this.updatePaymentStatus = this.updatePaymentStatus.bind(this);
+    this.activate = this.activate.bind(this);
+  }
+
+  // ✅ CORRIGIDO: Método para lidar com filtro por clientId usando aggregation
   async indexWithClientFilter(req, res, params) {
     const {
       pageNum, limitNum, skip, clientId, search, paymentStatus,
@@ -15,19 +31,60 @@ class ProductionReceiptController {
     } = params;
 
     try {
-      // Converter clientId para ObjectId se necessário
-      const clientObjectId = mongoose.Types.ObjectId.isValid(clientId) ? 
-        new mongoose.Types.ObjectId(clientId) : clientId;
+      // ✅ VALIDAÇÃO: Verificar se clientId é válido
+      if (!clientId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Client ID is required for this filter'
+        });
+      }
 
-      // Construir pipeline de agregação
+      // ✅ CORRIGIDO: Converter clientId para ObjectId de forma mais robusta
+      let clientObjectId;
+      try {
+        clientObjectId = mongoose.Types.ObjectId.isValid(clientId) ? 
+          new mongoose.Types.ObjectId(clientId) : null;
+        
+        if (!clientObjectId) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid client ID format'
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid client ID format'
+        });
+      }
+
+      // ✅ CORRIGIDO: Usar os nomes corretos das coleções do MongoDB
+      // Vamos descobrir os nomes corretos das coleções
+      const productionOrderCollection = ProductionOrder.collection.name;
+      const developmentCollection = mongoose.model('Development').collection.name;
+      const clientCollection = mongoose.model('Client').collection.name;
+
+      console.log('Collection names:', {
+        productionOrders: productionOrderCollection,
+        developments: developmentCollection,
+        clients: clientCollection
+      });
+
+      // ✅ CORRIGIDO: Pipeline de agregação mais robusto
       const pipeline = [
         // Join com ProductionOrder
         {
           $lookup: {
-            from: 'productionorders', // nome da coleção no MongoDB
+            from: productionOrderCollection,
             localField: 'productionOrderId',
             foreignField: '_id',
             as: 'productionOrder'
+          }
+        },
+        // ✅ CORRIGIDO: Verificar se encontrou a production order
+        {
+          $match: {
+            'productionOrder.0': { $exists: true } // Garantir que existe ao menos um elemento
           }
         },
         { $unwind: '$productionOrder' },
@@ -35,10 +92,16 @@ class ProductionReceiptController {
         // Join com Development
         {
           $lookup: {
-            from: 'developments', // nome da coleção no MongoDB
+            from: developmentCollection,
             localField: 'productionOrder.developmentId',
             foreignField: '_id',
             as: 'development'
+          }
+        },
+        // ✅ CORRIGIDO: Verificar se encontrou o development
+        {
+          $match: {
+            'development.0': { $exists: true }
           }
         },
         { $unwind: '$development' },
@@ -46,15 +109,21 @@ class ProductionReceiptController {
         // Join com Client
         {
           $lookup: {
-            from: 'clients', // nome da coleção no MongoDB
+            from: clientCollection,
             localField: 'development.clientId',
             foreignField: '_id',
             as: 'client'
           }
         },
+        // ✅ CORRIGIDO: Verificar se encontrou o client
+        {
+          $match: {
+            'client.0': { $exists: true }
+          }
+        },
         { $unwind: '$client' },
         
-        // Filtrar por clientId
+        // ✅ FILTRAR por clientId
         {
           $match: {
             'client._id': clientObjectId
@@ -62,23 +131,35 @@ class ProductionReceiptController {
         }
       ];
 
-      // Aplicar filtros básicos
+      // ✅ CORRIGIDO: Aplicar filtros básicos de forma mais robusta
       const matchConditions = {};
       
       // Filtro de ativo/inativo
       if (active === 'false') {
         matchConditions.active = false;
       } else if (active !== 'all') {
-        matchConditions.active = true;
+        matchConditions.active = { $ne: false }; // Incluir true e undefined/null
       }
 
       // Outros filtros
-      if (paymentStatus) matchConditions.paymentStatus = paymentStatus;
-      if (paymentMethod) matchConditions.paymentMethod = paymentMethod;
+      if (paymentStatus) {
+        matchConditions.paymentStatus = paymentStatus;
+      }
+      
+      if (paymentMethod) {
+        matchConditions.paymentMethod = paymentMethod;
+      }
+      
       if (productionOrderId) {
-        const prodOrderId = mongoose.Types.ObjectId.isValid(productionOrderId) ? 
-          new mongoose.Types.ObjectId(productionOrderId) : productionOrderId;
-        matchConditions.productionOrderId = prodOrderId;
+        try {
+          const prodOrderId = mongoose.Types.ObjectId.isValid(productionOrderId) ? 
+            new mongoose.Types.ObjectId(productionOrderId) : null;
+          if (prodOrderId) {
+            matchConditions.productionOrderId = prodOrderId;
+          }
+        } catch (error) {
+          console.warn('Invalid productionOrderId:', productionOrderId);
+        }
       }
 
       // Filtro overdue
@@ -92,39 +173,53 @@ class ProductionReceiptController {
         matchConditions.createdAt = {};
         
         if (createdFrom) {
-          const fromDate = new Date(createdFrom);
-          fromDate.setHours(0, 0, 0, 0);
-          matchConditions.createdAt.$gte = fromDate;
+          try {
+            const fromDate = new Date(createdFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            matchConditions.createdAt.$gte = fromDate;
+          } catch (error) {
+            console.warn('Invalid createdFrom date:', createdFrom);
+          }
         }
         
         if (createdTo) {
-          const toDate = new Date(createdTo);
-          toDate.setHours(23, 59, 59, 999);
-          matchConditions.createdAt.$lte = toDate;
+          try {
+            const toDate = new Date(createdTo);
+            toDate.setHours(23, 59, 59, 999);
+            matchConditions.createdAt.$lte = toDate;
+          } catch (error) {
+            console.warn('Invalid createdTo date:', createdTo);
+          }
         }
       }
 
       // Text search
-      if (search) {
-        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (search && search.trim()) {
+        const searchRegex = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         matchConditions.$or = [
           { internalReference: { $regex: searchRegex, $options: 'i' } },
           { notes: { $regex: searchRegex, $options: 'i' } }
         ];
       }
 
-      // Adicionar condições de match ao pipeline
+      // ✅ ADICIONAR condições de match ao pipeline
       if (Object.keys(matchConditions).length > 0) {
         pipeline.push({ $match: matchConditions });
       }
 
       console.log('Aggregation Pipeline:', JSON.stringify(pipeline, null, 2));
 
-      // Preparar ordenação
-      const finalOrder = sortOrder || order;
-      const sortOrderValue = finalOrder === 'desc' ? -1 : 1;
-      const sortField = ['internalReference', 'paymentStatus', 'paymentMethod', 'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'].includes(sortBy) ? 
-        sortBy : 'createdAt';
+      // ✅ CORRIGIDO: Preparar ordenação de forma mais robusta
+      const finalOrder = sortOrder || order || 'desc';
+      const sortOrderValue = finalOrder.toString().toLowerCase() === 'desc' ? -1 : 1;
+      
+      // Lista de campos válidos para ordenação
+      const validSortFields = [
+        'internalReference', 'paymentStatus', 'paymentMethod', 
+        'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'
+      ];
+      
+      const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
       // Pipeline para contar total
       const countPipeline = [...pipeline, { $count: 'total' }];
@@ -135,7 +230,7 @@ class ProductionReceiptController {
         { $sort: { [sortField]: sortOrderValue } },
         { $skip: skip },
         { $limit: limitNum },
-        // Reestruturar dados para manter compatibilidade
+        // ✅ CORRIGIDO: Reestruturar dados para manter compatibilidade
         {
           $project: {
             _id: 1,
@@ -144,6 +239,7 @@ class ProductionReceiptController {
             paymentMethod: 1,
             totalAmount: 1,
             paidAmount: 1,
+            remainingAmount: 1,
             issueDate: 1,
             dueDate: 1,
             paymentDate: 1,
@@ -151,37 +247,72 @@ class ProductionReceiptController {
             active: 1,
             createdAt: 1,
             updatedAt: 1,
-            productionOrderId: {
+            // ✅ MANTER estrutura esperada pelo frontend
+            productionOrder: {
               _id: '$productionOrder._id',
               internalReference: '$productionOrder.internalReference',
               developmentId: '$productionOrder.developmentId',
-              fabricType: '$productionOrder.fabricType'
-            },
-            // Adicionar dados do development e client para facilitar acesso no frontend
-            'productionOrder.development': {
-              _id: '$development._id',
-              clientReference: '$development.clientReference',
-              client: {
-                _id: '$client._id',
-                companyName: '$client.companyName',
-                name: '$client.name',
-                acronym: '$client.acronym'
+              fabricType: '$productionOrder.fabricType',
+              status: '$productionOrder.status',
+              observations: '$productionOrder.observations',
+              productionType: '$productionOrder.productionType',
+              active: '$productionOrder.active',
+              createdAt: '$productionOrder.createdAt',
+              updatedAt: '$productionOrder.updatedAt',
+              // ✅ DEVELOPMENT com CLIENT aninhado dentro do productionOrder
+              development: {
+                _id: '$development._id',
+                internalReference: '$development.internalReference',
+                clientId: '$development.clientId',
+                clientReference: '$development.clientReference',
+                description: '$development.description',
+                pieceImage: '$development.pieceImage',
+                variants: '$development.variants',
+                productionType: '$development.productionType',
+                status: '$development.status',
+                active: '$development.active',
+                createdAt: '$development.createdAt',
+                updatedAt: '$development.updatedAt',
+                // ✅ CLIENT aninhado dentro do development
+                client: {
+                  _id: '$client._id',
+                  companyName: '$client.companyName',
+                  name: '$client.name',
+                  cnpj: '$client.cnpj',
+                  acronym: '$client.acronym',
+                  contact: '$client.contact',
+                  values: '$client.values',
+                  active: '$client.active',
+                  createdAt: '$client.createdAt',
+                  updatedAt: '$client.updatedAt'
+                }
               }
             }
           }
         }
       ];
 
-      // Executar ambas as queries
-      const [dataResult, countResult] = await Promise.all([
-        ProductionReceipt.aggregate(dataPipeline),
-        ProductionReceipt.aggregate(countPipeline)
-      ]);
+      // ✅ EXECUTAR ambas as queries com tratamento de erro
+      let dataResult, countResult;
+      
+      try {
+        [dataResult, countResult] = await Promise.all([
+          ProductionReceipt.aggregate(dataPipeline),
+          ProductionReceipt.aggregate(countPipeline)
+        ]);
+      } catch (aggregationError) {
+        console.error('Aggregation error:', aggregationError);
+        return res.status(500).json({
+          success: false,
+          message: 'Error in aggregation pipeline',
+          error: aggregationError.message
+        });
+      }
 
-      const productionReceipts = dataResult;
+      const productionReceipts = dataResult || [];
       const totalCount = countResult[0]?.total || 0;
 
-      console.log('Results found (with clientId filter):', totalCount);
+      console.log(`Results found (with clientId ${clientId} filter):`, totalCount);
 
       // Pagination info
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -200,6 +331,13 @@ class ProductionReceiptController {
           hasPrevPage,
           nextPage: hasNextPage ? pageNum + 1 : null,
           prevPage: hasPrevPage ? pageNum - 1 : null
+        },
+        filters: {
+          clientId: clientId,
+          search: search,
+          paymentStatus: paymentStatus,
+          paymentMethod: paymentMethod,
+          active: active
         }
       });
 
@@ -208,7 +346,8 @@ class ProductionReceiptController {
       res.status(500).json({
         success: false,
         message: 'Error fetching production receipts with client filter',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
