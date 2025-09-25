@@ -696,8 +696,8 @@ const validateCreateProductionOrder = [
 
   body('status')
     .optional()
-    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
-    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
+    .isIn(['CREATED', 'PILOT_PRODUCTION', 'PILOT_SENT', 'PILOT_APPROVED', 'PRODUCTION_STARTED', 'FINALIZED'])
+    .withMessage('Status must be: CREATED, PILOT_PRODUCTION, PILOT_SENT, PILOT_APPROVED, PRODUCTION_STARTED, or FINALIZED'),
 
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
@@ -768,9 +768,8 @@ body('productionType.localized.sizes.xl')
 
   body('status')
     .optional()
-    .isIn(['started', 'impediment', 'awaiting_approval', 'approved', 'refused'])
-    .withMessage('Status must be: started, impediment, awaiting_approval, approved, or refused'),
-
+    .isIn(['CREATED', 'PILOT_PRODUCTION', 'PILOT_SENT', 'PILOT_APPROVED', 'PRODUCTION_STARTED', 'FINALIZED'])
+    .withMessage('Status must be: CREATED, PILOT_PRODUCTION, PILOT_SENT, PILOT_APPROVED, PRODUCTION_STARTED, or FINALIZED'),
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
 

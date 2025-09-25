@@ -270,13 +270,27 @@ class DevelopmentController {
         }
       }
 
+      // ✅ NOVA LÓGICA - Processar productionType baseado no tipo
+      if (req.body.productionType.type === 'localized') {
+        // Se não tiver additionalInfo ou sizes, criar com tamanhos padrão
+        if (!req.body.productionType.additionalInfo) {
+          req.body.productionType.additionalInfo = {
+            variant: '',
+            sizes: [
+              { size: 'PP', value: 0 },
+              { size: 'P', value: 0 },
+              { size: 'M', value: 0 },
+              { size: 'G', value: 0 },
+              { size: 'G1', value: 0 },
+              { size: 'G2', value: 0 }
+            ]
+          };
+        }
+      }
+      
       const development = await Development.findByIdAndUpdate(
         id,
-        req.body,
-        { 
-          new: true, 
-          runValidators: true 
-        }
+        req.body
       );
 
       if (!development) {
