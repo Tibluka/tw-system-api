@@ -200,6 +200,8 @@ class DevelopmentController {
             ]
           };
         }
+      } else {
+        req.body.productionType.meters = 0
       }
   
       const development = new Development(req.body);
@@ -286,7 +288,10 @@ class DevelopmentController {
             ]
           };
         }
+      } else {
+        req.body.productionType.meters = 0
       }
+  
       
       const development = await Development.findByIdAndUpdate(
         id,
