@@ -1,8 +1,218 @@
+// controllers/productionReceiptController.js
+
 const ProductionReceipt = require('../models/ProductionReceipt');
 const ProductionOrder = require('../models/ProductionOrder');
 const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 
 class ProductionReceiptController {
+  // ✅ NOVO: Método para lidar com filtro por clientId usando aggregation
+  async indexWithClientFilter(req, res, params) {
+    const {
+      pageNum, limitNum, skip, clientId, search, paymentStatus,
+      paymentMethod, productionOrderId, overdue, active,
+      createdFrom, createdTo, sortBy, sortOrder, order
+    } = params;
+
+    try {
+      // Converter clientId para ObjectId se necessário
+      const clientObjectId = mongoose.Types.ObjectId.isValid(clientId) ? 
+        new mongoose.Types.ObjectId(clientId) : clientId;
+
+      // Construir pipeline de agregação
+      const pipeline = [
+        // Join com ProductionOrder
+        {
+          $lookup: {
+            from: 'productionorders', // nome da coleção no MongoDB
+            localField: 'productionOrderId',
+            foreignField: '_id',
+            as: 'productionOrder'
+          }
+        },
+        { $unwind: '$productionOrder' },
+        
+        // Join com Development
+        {
+          $lookup: {
+            from: 'developments', // nome da coleção no MongoDB
+            localField: 'productionOrder.developmentId',
+            foreignField: '_id',
+            as: 'development'
+          }
+        },
+        { $unwind: '$development' },
+        
+        // Join com Client
+        {
+          $lookup: {
+            from: 'clients', // nome da coleção no MongoDB
+            localField: 'development.clientId',
+            foreignField: '_id',
+            as: 'client'
+          }
+        },
+        { $unwind: '$client' },
+        
+        // Filtrar por clientId
+        {
+          $match: {
+            'client._id': clientObjectId
+          }
+        }
+      ];
+
+      // Aplicar filtros básicos
+      const matchConditions = {};
+      
+      // Filtro de ativo/inativo
+      if (active === 'false') {
+        matchConditions.active = false;
+      } else if (active !== 'all') {
+        matchConditions.active = true;
+      }
+
+      // Outros filtros
+      if (paymentStatus) matchConditions.paymentStatus = paymentStatus;
+      if (paymentMethod) matchConditions.paymentMethod = paymentMethod;
+      if (productionOrderId) {
+        const prodOrderId = mongoose.Types.ObjectId.isValid(productionOrderId) ? 
+          new mongoose.Types.ObjectId(productionOrderId) : productionOrderId;
+        matchConditions.productionOrderId = prodOrderId;
+      }
+
+      // Filtro overdue
+      if (overdue === 'true') {
+        matchConditions.paymentStatus = 'PENDING';
+        matchConditions.dueDate = { $lt: new Date() };
+      }
+
+      // Filtros por data
+      if (createdFrom || createdTo) {
+        matchConditions.createdAt = {};
+        
+        if (createdFrom) {
+          const fromDate = new Date(createdFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          matchConditions.createdAt.$gte = fromDate;
+        }
+        
+        if (createdTo) {
+          const toDate = new Date(createdTo);
+          toDate.setHours(23, 59, 59, 999);
+          matchConditions.createdAt.$lte = toDate;
+        }
+      }
+
+      // Text search
+      if (search) {
+        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        matchConditions.$or = [
+          { internalReference: { $regex: searchRegex, $options: 'i' } },
+          { notes: { $regex: searchRegex, $options: 'i' } }
+        ];
+      }
+
+      // Adicionar condições de match ao pipeline
+      if (Object.keys(matchConditions).length > 0) {
+        pipeline.push({ $match: matchConditions });
+      }
+
+      console.log('Aggregation Pipeline:', JSON.stringify(pipeline, null, 2));
+
+      // Preparar ordenação
+      const finalOrder = sortOrder || order;
+      const sortOrderValue = finalOrder === 'desc' ? -1 : 1;
+      const sortField = ['internalReference', 'paymentStatus', 'paymentMethod', 'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'].includes(sortBy) ? 
+        sortBy : 'createdAt';
+
+      // Pipeline para contar total
+      const countPipeline = [...pipeline, { $count: 'total' }];
+
+      // Pipeline para buscar dados com paginação
+      const dataPipeline = [
+        ...pipeline,
+        { $sort: { [sortField]: sortOrderValue } },
+        { $skip: skip },
+        { $limit: limitNum },
+        // Reestruturar dados para manter compatibilidade
+        {
+          $project: {
+            _id: 1,
+            internalReference: 1,
+            paymentStatus: 1,
+            paymentMethod: 1,
+            totalAmount: 1,
+            paidAmount: 1,
+            issueDate: 1,
+            dueDate: 1,
+            paymentDate: 1,
+            notes: 1,
+            active: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            productionOrderId: {
+              _id: '$productionOrder._id',
+              internalReference: '$productionOrder.internalReference',
+              developmentId: '$productionOrder.developmentId',
+              fabricType: '$productionOrder.fabricType'
+            },
+            // Adicionar dados do development e client para facilitar acesso no frontend
+            'productionOrder.development': {
+              _id: '$development._id',
+              clientReference: '$development.clientReference',
+              client: {
+                _id: '$client._id',
+                companyName: '$client.companyName',
+                name: '$client.name',
+                acronym: '$client.acronym'
+              }
+            }
+          }
+        }
+      ];
+
+      // Executar ambas as queries
+      const [dataResult, countResult] = await Promise.all([
+        ProductionReceipt.aggregate(dataPipeline),
+        ProductionReceipt.aggregate(countPipeline)
+      ]);
+
+      const productionReceipts = dataResult;
+      const totalCount = countResult[0]?.total || 0;
+
+      console.log('Results found (with clientId filter):', totalCount);
+
+      // Pagination info
+      const totalPages = Math.ceil(totalCount / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      res.json({
+        success: true,
+        data: productionReceipts,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems: totalCount,
+          itemsPerPage: limitNum,
+          hasNextPage,
+          hasPrevPage,
+          nextPage: hasNextPage ? pageNum + 1 : null,
+          prevPage: hasPrevPage ? pageNum - 1 : null
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in productionReceipts.indexWithClientFilter:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching production receipts with client filter',
+        error: error.message
+      });
+    }
+  }
+
   // GET /production-receipts - List all production receipts
   async index(req, res) {
     try {
@@ -10,6 +220,7 @@ class ProductionReceiptController {
         page = 1, 
         limit = 10, 
         search = '', 
+        clientId = null,
         paymentStatus,
         paymentMethod,
         productionOrderId,
@@ -31,7 +242,16 @@ class ProductionReceiptController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      // SEMPRE filtrar apenas production receipts ativos por padrão
+      // ✅ NOVO: Se há filtro por clientId, usar aggregation pipeline
+      if (clientId) {
+        return await this.indexWithClientFilter(req, res, {
+          pageNum, limitNum, skip, clientId, search, paymentStatus, 
+          paymentMethod, productionOrderId, overdue, active, 
+          createdFrom, createdTo, sortBy, sortOrder, order
+        });
+      }
+
+      // Lógica original para quando não há filtro por clientId
       const query = { active: true };
       
       // Permitir buscar inativos apenas se explicitamente solicitado
@@ -169,7 +389,7 @@ class ProductionReceiptController {
     }
   }
 
-  // GET /production-receipts/by-production-order/:productionOrderId - Get production receipt by production order
+  // GET /production-receipts/by-production-order/:productionOrderId
   async getByProductionOrder(req, res) {
     try {
       const { productionOrderId } = req.params;
@@ -203,7 +423,7 @@ class ProductionReceiptController {
     }
   }
 
-  // GET /production-receipts/overdue - Get overdue production receipts
+  // GET /production-receipts/overdue
   async getOverdue(req, res) {
     try {
       const overdueReceipts = await ProductionReceipt.find({
@@ -225,23 +445,19 @@ class ProductionReceiptController {
     }
   }
 
-  // GET /production-receipts/:id - Get production receipt by ID or internalReference
+  // GET /production-receipts/:id
   async show(req, res) {
     try {
       const { id } = req.params;
-      let productionReceipt = null;
+      let productionReceipt;
 
-      // Tentar buscar por MongoDB ObjectId primeiro (apenas ativos)
-      if (id.match(/^[0-9a-fA-F]{24}$/)) {
-        productionReceipt = await ProductionReceipt.findOne({ _id: id, active: true });
-      }
-      
-      // Se não encontrou, tentar por internalReference (apenas ativos)
-      if (!productionReceipt) {
-        productionReceipt = await ProductionReceipt.findOne({ 
-          internalReference: id.toUpperCase(),
-          active: true 
-        });
+      // Verificar se é um ObjectId válido ou buscar por internalReference
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        productionReceipt = await ProductionReceipt.findById(id)
+          .populate('productionOrderId', 'internalReference developmentId fabricType');
+      } else {
+        productionReceipt = await ProductionReceipt.findOne({ internalReference: id })
+          .populate('productionOrderId', 'internalReference developmentId fabricType');
       }
 
       if (!productionReceipt) {
@@ -256,6 +472,13 @@ class ProductionReceiptController {
         data: productionReceipt
       });
     } catch (error) {
+      if (error.name === 'CastError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid production receipt ID'
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Error fetching production receipt',
@@ -264,66 +487,31 @@ class ProductionReceiptController {
     }
   }
 
-  // POST /production-receipts - Create new production receipt
+  // POST /production-receipts
   async store(req, res) {
     try {
-      // Check validation errors
+      // Verificar erros de validação
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Validation errors',
           errors: errors.array()
         });
       }
 
-      // Verify production order exists and is finalized
-      const productionOrder = await ProductionOrder.findById(req.body.productionOrderId);
-      
-      if (!productionOrder) {
-        return res.status(404).json({
-          success: false,
-          message: 'Production order not found'
-        });
-      }
-
-      if (productionOrder.status !== 'FINALIZED') {
-        return res.status(400).json({
-          success: false,
-          message: 'Production order must be finalized to create production receipt'
-        });
-      }
-
-      // Check if production receipt already exists for this production order
-      const existingReceipt = await ProductionReceipt.findOne({
-        productionOrderId: req.body.productionOrderId,
-        active: true
-      });
-
-      if (existingReceipt) {
-        return res.status(400).json({
-          success: false,
-          message: 'Production receipt already exists for this production order'
-        });
-      }
-
-      const productionReceipt = new ProductionReceipt(req.body);
-      await productionReceipt.save();
+      const productionReceipt = await ProductionReceipt.createProductionReceipt(req.body);
 
       res.status(201).json({
         success: true,
-        message: 'Production receipt created successfully',
-        data: productionReceipt
+        data: productionReceipt,
+        message: 'Production receipt created successfully'
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => ({
-            field: err.path,
-            message: err.message
-          }))
+          message: 'Production receipt with this internal reference already exists'
         });
       }
 
@@ -335,26 +523,26 @@ class ProductionReceiptController {
     }
   }
 
-  // PUT /production-receipts/:id - Update production receipt
+  // PUT /production-receipts/:id
   async update(req, res) {
     try {
-      const { id } = req.params;
-      
-      // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Validation errors',
           errors: errors.array()
         });
       }
 
+      const { id } = req.params;
+      const updateData = { ...req.body };
+
       const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
         id,
-        req.body,
+        updateData,
         { new: true, runValidators: true }
-      );
+      ).populate('productionOrderId', 'internalReference developmentId fabricType');
 
       if (!productionReceipt) {
         return res.status(404).json({
@@ -365,25 +553,21 @@ class ProductionReceiptController {
 
       res.json({
         success: true,
-        message: 'Production receipt updated successfully',
-        data: productionReceipt
+        data: productionReceipt,
+        message: 'Production receipt updated successfully'
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => ({
-            field: err.path,
-            message: err.message
-          }))
+          message: 'Production receipt with this internal reference already exists'
         });
       }
 
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'Invalid production receipt ID'
         });
       }
 
@@ -395,64 +579,40 @@ class ProductionReceiptController {
     }
   }
 
-  // POST /production-receipts/:id/process-payment - Process payment for production receipt
+  // POST /production-receipts/:id/process-payment
   async processPayment(req, res) {
     try {
-      const { id } = req.params;
-      const { paidAmount, paymentDate } = req.body;
-      
-      // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Validation errors',
           errors: errors.array()
         });
       }
 
-      const productionReceipt = await ProductionReceipt.findById(id);
-      
-      if (!productionReceipt) {
-        return res.status(404).json({
-          success: false,
-          message: 'Production receipt not found'
-        });
-      }
+      const { id } = req.params;
+      const { amount, paymentDate } = req.body;
 
-      // Update payment data
-      productionReceipt.paidAmount += paidAmount;
-      productionReceipt.paymentDate = paymentDate ? new Date(paymentDate) : new Date();
-      
-      // Check if fully paid
-      if (productionReceipt.paidAmount >= productionReceipt.totalAmount) {
-        productionReceipt.paymentStatus = 'PAID';
-        productionReceipt.paidAmount = productionReceipt.totalAmount; // Ensure it doesn't exceed
-      }
-
-      await productionReceipt.save();
+      const productionReceipt = await ProductionReceipt.processPayment(id, amount, paymentDate);
 
       res.json({
         success: true,
-        message: 'Payment processed successfully',
-        data: productionReceipt
+        data: productionReceipt,
+        message: 'Payment processed successfully'
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
-        return res.status(400).json({
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => ({
-            field: err.path,
-            message: err.message
-          }))
+          message: error.message
         });
       }
 
-      if (error.name === 'CastError') {
+      if (error.message.includes('already paid') || error.message.includes('exceeds')) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: error.message
         });
       }
 
@@ -464,37 +624,26 @@ class ProductionReceiptController {
     }
   }
 
-  // PATCH /production-receipts/:id/payment-status - Update only production receipt payment status
+  // PATCH /production-receipts/:id/payment-status
   async updatePaymentStatus(req, res) {
     try {
-      const { id } = req.params;
-      const { paymentStatus, paymentDate } = req.body;
-      
-      // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Validation errors',
           errors: errors.array()
         });
       }
 
-      const updateData = { paymentStatus };
-
-      // Se está marcando como PAID, definir data de pagamento
-      if (paymentStatus === 'PAID') {
-        updateData.paymentDate = paymentDate ? new Date(paymentDate) : new Date();
-      } else {
-        // Se está voltando para PENDING, remover data de pagamento
-        updateData.paymentDate = undefined;
-      }
+      const { id } = req.params;
+      const { paymentStatus } = req.body;
 
       const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
         id,
-        updateData,
+        { paymentStatus },
         { new: true, runValidators: true }
-      );
+      ).populate('productionOrderId', 'internalReference developmentId fabricType');
 
       if (!productionReceipt) {
         return res.status(404).json({
@@ -505,14 +654,14 @@ class ProductionReceiptController {
 
       res.json({
         success: true,
-        message: 'Payment status updated successfully',
-        data: productionReceipt
+        data: productionReceipt,
+        message: 'Payment status updated successfully'
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'Invalid production receipt ID'
         });
       }
 
@@ -524,16 +673,16 @@ class ProductionReceiptController {
     }
   }
 
-  // POST /production-receipts/:id/activate - Reactivate production receipt
+  // POST /production-receipts/:id/activate
   async activate(req, res) {
     try {
       const { id } = req.params;
-      
+
       const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
         id,
         { active: true },
         { new: true }
-      );
+      ).populate('productionOrderId', 'internalReference developmentId fabricType');
 
       if (!productionReceipt) {
         return res.status(404).json({
@@ -544,30 +693,30 @@ class ProductionReceiptController {
 
       res.json({
         success: true,
-        message: 'Production receipt reactivated successfully',
-        data: productionReceipt
+        data: productionReceipt,
+        message: 'Production receipt activated successfully'
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'Invalid production receipt ID'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error reactivating production receipt',
+        message: 'Error activating production receipt',
         error: error.message
       });
     }
   }
 
-  // DELETE /production-receipts/:id - Deactivate production receipt (soft delete)
+  // DELETE /production-receipts/:id
   async destroy(req, res) {
     try {
       const { id } = req.params;
-      
+
       const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
         id,
         { active: false },
@@ -583,14 +732,13 @@ class ProductionReceiptController {
 
       res.json({
         success: true,
-        message: 'Production receipt deactivated successfully',
-        data: productionReceipt
+        message: 'Production receipt deactivated successfully'
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'Invalid production receipt ID'
         });
       }
 
