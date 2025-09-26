@@ -709,11 +709,8 @@ class ProductionReceiptController {
       const { id } = req.params;
       const updateData = { ...req.body };
 
-      const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      ).populate('productionOrderId', 'internalReference developmentId fabricType');
+      // ✅ CORRIGIDO: Buscar o documento primeiro para validações manuais
+      const productionReceipt = await ProductionReceipt.findById(id);
 
       if (!productionReceipt) {
         return res.status(404).json({
@@ -722,12 +719,68 @@ class ProductionReceiptController {
         });
       }
 
+      // ✅ VALIDAÇÃO: Verificar se paidAmount não excede totalAmount
+      if (updateData.paidAmount !== undefined) {
+        if (updateData.paidAmount > productionReceipt.totalAmount) {
+          return res.status(400).json({
+            success: false,
+            message: 'Paid amount cannot be greater than total amount',
+            details: {
+              paidAmount: updateData.paidAmount,
+              totalAmount: productionReceipt.totalAmount,
+              maxAllowed: productionReceipt.totalAmount
+            }
+          });
+        }
+      }
+
+      // ✅ VALIDAÇÃO: Se totalAmount está sendo alterado, verificar se paidAmount não excede
+      if (updateData.totalAmount !== undefined) {
+        const newTotalAmount = updateData.totalAmount;
+        const currentPaidAmount = updateData.paidAmount !== undefined ? updateData.paidAmount : productionReceipt.paidAmount;
+        
+        if (currentPaidAmount > newTotalAmount) {
+          return res.status(400).json({
+            success: false,
+            message: 'Paid amount cannot be greater than total amount',
+            details: {
+              paidAmount: currentPaidAmount,
+              totalAmount: newTotalAmount,
+              maxAllowed: newTotalAmount
+            }
+          });
+        }
+      }
+
+      // ✅ ATUALIZAR: Aplicar as mudanças
+      Object.assign(productionReceipt, updateData);
+
+      // ✅ CALCULAR: remainingAmount automaticamente
+      productionReceipt.remainingAmount = productionReceipt.totalAmount - productionReceipt.paidAmount;
+
+      // ✅ SALVAR: Com validações
+      await productionReceipt.save();
+
+      // ✅ POPULATE: Para retornar dados completos
+      await productionReceipt.populate('productionOrderId', 'internalReference developmentId fabricType');
+
       res.json({
         success: true,
         data: productionReceipt,
         message: 'Production receipt updated successfully'
       });
     } catch (error) {
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: Object.values(error.errors).map(err => ({
+            field: err.path,
+            message: err.message
+          }))
+        });
+      }
+
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
