@@ -639,7 +639,39 @@ class ProductionReceiptController {
         });
       }
 
-      const productionReceipt = await ProductionReceipt.createProductionReceipt(req.body);
+      // Verificar se a production order existe e está finalizada
+      const productionOrder = await ProductionOrder.findById(req.body.productionOrderId);
+      
+      if (!productionOrder) {
+        return res.status(404).json({
+          success: false,
+          message: 'Production order not found'
+        });
+      }
+
+      if (productionOrder.status !== 'FINALIZED') {
+        return res.status(400).json({
+          success: false,
+          message: 'Production order must be finalized to create production receipt'
+        });
+      }
+
+      // Verificar se já existe um production receipt para esta production order
+      const existingReceipt = await ProductionReceipt.findOne({
+        productionOrderId: req.body.productionOrderId,
+        active: true
+      });
+
+      if (existingReceipt) {
+        return res.status(400).json({
+          success: false,
+          message: 'Production receipt already exists for this production order'
+        });
+      }
+
+      // Criar o production receipt
+      const productionReceipt = new ProductionReceipt(req.body);
+      await productionReceipt.save();
 
       res.status(201).json({
         success: true,
@@ -733,7 +765,40 @@ class ProductionReceiptController {
       const { id } = req.params;
       const { amount, paymentDate } = req.body;
 
-      const productionReceipt = await ProductionReceipt.processPayment(id, amount, paymentDate);
+      const productionReceipt = await ProductionReceipt.findById(id);
+      
+      if (!productionReceipt) {
+        return res.status(404).json({
+          success: false,
+          message: 'Production receipt not found'
+        });
+      }
+
+      if (productionReceipt.paymentStatus === 'PAID') {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment already completed'
+        });
+      }
+
+      const newPaidAmount = productionReceipt.paidAmount + amount;
+      if (newPaidAmount > productionReceipt.totalAmount) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment amount exceeds remaining balance'
+        });
+      }
+
+      // Atualizar dados de pagamento
+      productionReceipt.paidAmount = newPaidAmount;
+      productionReceipt.remainingAmount = productionReceipt.totalAmount - productionReceipt.paidAmount;
+      
+      if (productionReceipt.paidAmount >= productionReceipt.totalAmount) {
+        productionReceipt.paymentStatus = 'PAID';
+        productionReceipt.paymentDate = paymentDate ? new Date(paymentDate) : new Date();
+      }
+
+      await productionReceipt.save();
 
       res.json({
         success: true,

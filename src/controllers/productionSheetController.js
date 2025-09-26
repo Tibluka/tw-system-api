@@ -304,7 +304,8 @@ class ProductionSheetController {
 
       const productionSheet = await ProductionSheet.findByIdAndUpdate(
         id,
-        { stage }
+        { stage },
+        { new: true }
       );
 
       if (!productionSheet) {
@@ -314,7 +315,26 @@ class ProductionSheetController {
         });
       }
 
-      await productionSheet.save();
+      // ✅ NOVO: Se o stage for FINISHED, atualizar a production order correspondente
+      if (stage === 'FINISHED') {
+        try {
+          const ProductionOrder = require('../models/ProductionOrder');
+          
+          const productionOrder = await ProductionOrder.findById(productionSheet.productionOrderId);
+          
+          if (productionOrder) {
+            productionOrder.status = 'FINALIZED';
+            await productionOrder.save();
+            
+            console.log(`✅ Production Order ${productionOrder.internalReference} atualizada para FINALIZED`);
+          } else {
+            console.warn(`⚠️ Production Order não encontrada para ProductionSheet ${id}`);
+          }
+        } catch (orderError) {
+          console.error('❌ Erro ao atualizar Production Order:', orderError);
+          // Não falha a operação principal, apenas loga o erro
+        }
+      }
 
       res.json({
         success: true,
