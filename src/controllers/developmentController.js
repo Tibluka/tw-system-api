@@ -4,91 +4,102 @@ const { validationResult } = require('express-validator');
 const { deleteImage, generateOptimizedUrls } = require('../config/cloudinary');
 
 class DevelopmentController {
-  // GET /developments - List all developments
-  async index(req, res) {
-    try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        search = '', 
-        status,
-        clientId,
-        active = true,
-        sortBy = 'createdAt',
-        order = 'desc'
-      } = req.query;
+ // GET /developments - List all developments
+async index(req, res) {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '', 
+      status,
+      clientId,
+      active = true,
+      sortBy = 'createdAt',
+      order = 'desc'
+    } = req.query;
 
-      // Validar e converter parâmetros de paginação
-      const pageNum = Math.max(1, parseInt(page));
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-      const skip = (pageNum - 1) * limitNum;
+    // Validar e converter parâmetros de paginação
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
 
-      const query = {};
-      
-      // Filter by status
-      if (status) {
-        query.status = status;
-      }
-      
-      // Filter by client
-      if (clientId) {
-        query.clientId = clientId;
-      }
-      
-      // Filter by active status
-      query.active = active;
-      
-      // Text search
-      if (search) {
-        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-        query.$or = [
-          { internalReference: { $regex: searchRegex, $options: 'i' } },
-          { clientReference: { $regex: searchRegex, $options: 'i' } },
-          { description: { $regex: searchRegex, $options: 'i' } }
-        ];
-      }
-
-      // Configurar ordenação
-      const sortOrder = order === 'desc' ? -1 : 1;
-      const sortField = ['internalReference', 'description', 'status', 'createdAt', 'updatedAt'].includes(sortBy) ? sortBy : 'createdAt';
-
-      // Buscar developments com paginação (client será populado automaticamente)
-      const [developments, totalCount] = await Promise.all([
-        Development.find(query)
-          .sort({ [sortField]: sortOrder })
-          .skip(skip)
-          .limit(limitNum)
-          .lean({ virtuals: true }), // Para incluir virtuals no lean
-        Development.countDocuments(query)
-      ]);
-
-      // Calcular informações de paginação
-      const totalPages = Math.ceil(totalCount / limitNum);
-      const hasNext = pageNum < totalPages;
-      const hasPrev = pageNum > 1;
-      
-      res.json({
-        success: true,
-        data: developments,
-        pagination: {
-          currentPage: pageNum,
-          totalPages,
-          totalItems: totalCount,
-          itemsPerPage: limitNum,
-          hasNext,
-          hasPrev,
-          nextPage: hasNext ? pageNum + 1 : null,
-          prevPage: hasPrev ? pageNum - 1 : null
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Erro interno do servidor ao buscar developments',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+    let query = {};
+    
+    // Filter by status
+    if (status) {
+      query.status = status;
     }
+    
+    // Filter by client
+    if (clientId) {
+      query.clientId = clientId;
+    }
+    
+    // Filter by active status
+    query.active = active;
+    
+    // Text search - MODIFICADO PARA INCLUIR client.companyName
+    if (search) {
+      const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
+      
+      // Primeiro, buscar clientes que correspondem ao search
+      const Client = require('../models/Client');
+      const matchingClients = await Client.find({
+        companyName: { $regex: searchRegex, $options: 'i' }
+      }).select('_id');
+      
+      const clientIds = matchingClients.map(client => client._id);
+      
+      // Query combinada: buscar nos campos diretos OU nos clients encontrados
+      query.$or = [
+        { internalReference: { $regex: searchRegex, $options: 'i' } },
+        { clientReference: { $regex: searchRegex, $options: 'i' } },
+        { description: { $regex: searchRegex, $options: 'i' } },
+        { clientId: { $in: clientIds } } // NOVO: buscar por IDs dos clientes encontrados
+      ];
+    }
+
+    // Configurar ordenação
+    const sortOrder = order === 'desc' ? -1 : 1;
+    const sortField = ['internalReference', 'description', 'status', 'createdAt', 'updatedAt'].includes(sortBy) ? sortBy : 'createdAt';
+
+    // Buscar developments com paginação (client será populado automaticamente)
+    const [developments, totalCount] = await Promise.all([
+      Development.find(query)
+        .sort({ [sortField]: sortOrder })
+        .skip(skip)
+        .limit(limitNum)
+        .lean({ virtuals: true }), // Para incluir virtuals no lean
+      Development.countDocuments(query)
+    ]);
+
+    // Calcular informações de paginação
+    const totalPages = Math.ceil(totalCount / limitNum);
+    const hasNext = pageNum < totalPages;
+    const hasPrev = pageNum > 1;
+    
+    res.json({
+      success: true,
+      data: developments,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limitNum,
+        hasNext,
+        hasPrev,
+        nextPage: hasNext ? pageNum + 1 : null,
+        prevPage: hasPrev ? pageNum - 1 : null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao buscar developments',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
+}
 
   // GET /developments/:id - Get development by ID, internalReference or clientReference
   async show(req, res) {
