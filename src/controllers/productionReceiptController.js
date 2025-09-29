@@ -59,7 +59,6 @@ class ProductionReceiptController {
       }
 
       // ✅ CORRIGIDO: Usar os nomes corretos das coleções do MongoDB
-      // Vamos descobrir os nomes corretos das coleções
       const productionOrderCollection = ProductionOrder.collection.name;
       const developmentCollection = mongoose.model('Development').collection.name;
       const clientCollection = mongoose.model('Client').collection.name;
@@ -81,12 +80,6 @@ class ProductionReceiptController {
             as: 'productionOrder'
           }
         },
-        // ✅ CORRIGIDO: Verificar se encontrou a production order
-        {
-          $match: {
-            'productionOrder.0': { $exists: true } // Garantir que existe ao menos um elemento
-          }
-        },
         { $unwind: '$productionOrder' },
         
         // Join com Development
@@ -96,12 +89,6 @@ class ProductionReceiptController {
             localField: 'productionOrder.developmentId',
             foreignField: '_id',
             as: 'development'
-          }
-        },
-        // ✅ CORRIGIDO: Verificar se encontrou o development
-        {
-          $match: {
-            'development.0': { $exists: true }
           }
         },
         { $unwind: '$development' },
@@ -115,204 +102,67 @@ class ProductionReceiptController {
             as: 'client'
           }
         },
-        // ✅ CORRIGIDO: Verificar se encontrou o client
-        {
-          $match: {
-            'client.0': { $exists: true }
-          }
-        },
         { $unwind: '$client' },
         
-        // ✅ FILTRAR por clientId
+        // Filtrar por clientId
         {
           $match: {
-            'client._id': clientObjectId
+            'client._id': clientObjectId,
+            active: true
           }
         }
       ];
 
-      // ✅ CORRIGIDO: Aplicar filtros básicos de forma mais robusta
-      const matchConditions = {};
-      
-      // Filtro de ativo/inativo
-      if (active === 'false') {
-        matchConditions.active = false;
-      } else if (active !== 'all') {
-        matchConditions.active = { $ne: false }; // Incluir true e undefined/null
-      }
-
-      // Outros filtros
+      // Adicionar outros filtros
       if (paymentStatus) {
-        matchConditions.paymentStatus = paymentStatus;
+        pipeline.push({ $match: { paymentStatus } });
       }
       
       if (paymentMethod) {
-        matchConditions.paymentMethod = paymentMethod;
+        pipeline.push({ $match: { paymentMethod } });
       }
       
-      if (productionOrderId) {
-        try {
-          const prodOrderId = mongoose.Types.ObjectId.isValid(productionOrderId) ? 
-            new mongoose.Types.ObjectId(productionOrderId) : null;
-          if (prodOrderId) {
-            matchConditions.productionOrderId = prodOrderId;
-          }
-        } catch (error) {
-          console.warn('Invalid productionOrderId:', productionOrderId);
-        }
-      }
-
-      // Filtro overdue
       if (overdue === 'true') {
-        matchConditions.paymentStatus = 'PENDING';
-        matchConditions.dueDate = { $lt: new Date() };
-      }
-
-      // Filtros por data
-      if (createdFrom || createdTo) {
-        matchConditions.createdAt = {};
-        
-        if (createdFrom) {
-          try {
-            const fromDate = new Date(createdFrom);
-            fromDate.setHours(0, 0, 0, 0);
-            matchConditions.createdAt.$gte = fromDate;
-          } catch (error) {
-            console.warn('Invalid createdFrom date:', createdFrom);
-          }
-        }
-        
-        if (createdTo) {
-          try {
-            const toDate = new Date(createdTo);
-            toDate.setHours(23, 59, 59, 999);
-            matchConditions.createdAt.$lte = toDate;
-          } catch (error) {
-            console.warn('Invalid createdTo date:', createdTo);
-          }
-        }
-      }
-
-      // Text search
-      if (search && search.trim()) {
-        const searchRegex = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        matchConditions.$or = [
-          { internalReference: { $regex: searchRegex, $options: 'i' } },
-          { notes: { $regex: searchRegex, $options: 'i' } }
-        ];
-      }
-
-      // ✅ ADICIONAR condições de match ao pipeline
-      if (Object.keys(matchConditions).length > 0) {
-        pipeline.push({ $match: matchConditions });
-      }
-
-      console.log('Aggregation Pipeline:', JSON.stringify(pipeline, null, 2));
-
-      // ✅ CORRIGIDO: Preparar ordenação de forma mais robusta
-      const finalOrder = sortOrder || order || 'desc';
-      const sortOrderValue = finalOrder.toString().toLowerCase() === 'desc' ? -1 : 1;
-      
-      // Lista de campos válidos para ordenação
-      const validSortFields = [
-        'internalReference', 'paymentStatus', 'paymentMethod', 
-        'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'
-      ];
-      
-      const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-
-      // Pipeline para contar total
-      const countPipeline = [...pipeline, { $count: 'total' }];
-
-      // Pipeline para buscar dados com paginação
-      const dataPipeline = [
-        ...pipeline,
-        { $sort: { [sortField]: sortOrderValue } },
-        { $skip: skip },
-        { $limit: limitNum },
-        // ✅ CORRIGIDO: Reestruturar dados para manter compatibilidade
-        {
-          $project: {
-            _id: 1,
-            internalReference: 1,
-            paymentStatus: 1,
-            paymentMethod: 1,
-            totalAmount: 1,
-            paidAmount: 1,
-            remainingAmount: 1,
-            issueDate: 1,
-            dueDate: 1,
-            paymentDate: 1,
-            notes: 1,
-            active: 1,
-            createdAt: 1,
-            updatedAt: 1,
-            // ✅ MANTER estrutura esperada pelo frontend
-            productionOrder: {
-              _id: '$productionOrder._id',
-              internalReference: '$productionOrder.internalReference',
-              developmentId: '$productionOrder.developmentId',
-              fabricType: '$productionOrder.fabricType',
-              status: '$productionOrder.status',
-              observations: '$productionOrder.observations',
-              productionType: '$productionOrder.productionType',
-              active: '$productionOrder.active',
-              createdAt: '$productionOrder.createdAt',
-              updatedAt: '$productionOrder.updatedAt',
-              // ✅ DEVELOPMENT com CLIENT aninhado dentro do productionOrder
-              development: {
-                _id: '$development._id',
-                internalReference: '$development.internalReference',
-                clientId: '$development.clientId',
-                clientReference: '$development.clientReference',
-                description: '$development.description',
-                pieceImage: '$development.pieceImage',
-                variants: '$development.variants',
-                productionType: '$development.productionType',
-                status: '$development.status',
-                active: '$development.active',
-                createdAt: '$development.createdAt',
-                updatedAt: '$development.updatedAt',
-                // ✅ CLIENT aninhado dentro do development
-                client: {
-                  _id: '$client._id',
-                  companyName: '$client.companyName',
-                  name: '$client.name',
-                  cnpj: '$client.cnpj',
-                  acronym: '$client.acronym',
-                  contact: '$client.contact',
-                  values: '$client.values',
-                  active: '$client.active',
-                  createdAt: '$client.createdAt',
-                  updatedAt: '$client.updatedAt'
-                }
-              }
-            }
-          }
-        }
-      ];
-
-      // ✅ EXECUTAR ambas as queries com tratamento de erro
-      let dataResult, countResult;
-      
-      try {
-        [dataResult, countResult] = await Promise.all([
-          ProductionReceipt.aggregate(dataPipeline),
-          ProductionReceipt.aggregate(countPipeline)
-        ]);
-      } catch (aggregationError) {
-        console.error('Aggregation error:', aggregationError);
-        return res.status(500).json({
-          success: false,
-          message: 'Error in aggregation pipeline',
-          error: aggregationError.message
+        pipeline.push({ 
+          $match: { 
+            paymentStatus: 'PENDING',
+            dueDate: { $lt: new Date() }
+          } 
         });
       }
 
-      const productionReceipts = dataResult || [];
-      const totalCount = countResult[0]?.total || 0;
+      // Busca por texto
+      if (search) {
+        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        pipeline.push({
+          $match: {
+            $or: [
+              { internalReference: { $regex: searchRegex, $options: 'i' } },
+              { notes: { $regex: searchRegex, $options: 'i' } }
+            ]
+          }
+        });
+      }
 
-      console.log(`Results found (with clientId ${clientId} filter):`, totalCount);
+      // Contagem total
+      const countPipeline = [...pipeline, { $count: 'total' }];
+      const countResult = await ProductionReceipt.aggregate(countPipeline);
+      const totalCount = countResult.length > 0 ? countResult[0].total : 0;
+
+      // Ordenação
+      const finalOrder = sortOrder || order;
+      const sortOrderValue = finalOrder === 'desc' ? -1 : 1;
+      const sortField = ['internalReference', 'paymentStatus', 'paymentMethod', 'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'].includes(sortBy) ? 
+        sortBy : 'createdAt';
+
+      pipeline.push(
+        { $sort: { [sortField]: sortOrderValue } },
+        { $skip: skip },
+        { $limit: limitNum }
+      );
+
+      // Executar query
+      const productionReceipts = await ProductionReceipt.aggregate(pipeline);
 
       // Pagination info
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -367,12 +217,11 @@ class ProductionReceiptController {
         active,
         sortBy = 'createdAt',
         order = 'desc',
-        sortOrder, // ✅ NOVO: Aceitar sortOrder também
-        createdFrom, // ✅ NOVO: Filtro de data inicial
-        createdTo    // ✅ NOVO: Filtro de data final
+        sortOrder,
+        createdFrom,
+        createdTo
       } = req.query;
 
-      // 🔍 DEBUG (remova depois)
       console.log('=== PRODUCTION RECEIPTS DEBUG ===');
       console.log('Query params:', req.query);
 
@@ -397,7 +246,7 @@ class ProductionReceiptController {
       if (active === 'false') {
         query.active = false;
       } else if (active === 'all') {
-        delete query.active; // Remove o filtro para mostrar todos
+        delete query.active;
       }
       
       // Filter by payment status
@@ -426,36 +275,29 @@ class ProductionReceiptController {
         query.createdAt = {};
         
         if (createdFrom) {
-          // Início do dia para createdFrom
           const fromDate = new Date(createdFrom);
           fromDate.setHours(0, 0, 0, 0);
           query.createdAt.$gte = fromDate;
-          
-          // 🔍 DEBUG (remova depois)
           console.log('createdFrom (parsed):', fromDate.toISOString());
         }
         
         if (createdTo) {
-          // Fim do dia para createdTo
           const toDate = new Date(createdTo);
           toDate.setHours(23, 59, 59, 999);
           query.createdAt.$lte = toDate;
-          
-          // 🔍 DEBUG (remova depois)
           console.log('createdTo (parsed):', toDate.toISOString());
         }
       }
       
       // Text search
       if (search) {
-        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
+        const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         query.$or = [
           { internalReference: { $regex: searchRegex, $options: 'i' } },
           { notes: { $regex: searchRegex, $options: 'i' } }
         ];
       }
 
-      // 🔍 DEBUG (remova depois)
       console.log('Final MongoDB Query:', JSON.stringify(query, null, 2));
 
       // ✅ CORRIGIDO: Aceitar tanto 'order' quanto 'sortOrder'
@@ -475,7 +317,6 @@ class ProductionReceiptController {
         ProductionReceipt.countDocuments(query)
       ]);
 
-      // 🔍 DEBUG (remova depois)
       console.log('Results found:', totalCount);
       productionReceipts.forEach(receipt => {
         console.log(`${receipt.internalReference}: ${new Date(receipt.createdAt).toISOString()}`);
@@ -881,7 +722,9 @@ class ProductionReceiptController {
     }
   }
 
-  // PATCH /production-receipts/:id/payment-status
+  // ✅✅✅ CORRIGIDO: PATCH /production-receipts/:id/payment-status
+  // Este método agora atualiza APENAS o status de pagamento,
+  // BYPASSANDO o middleware pre('save') que recalcula automaticamente o status
   async updatePaymentStatus(req, res) {
     try {
       const errors = validationResult(req);
@@ -894,20 +737,43 @@ class ProductionReceiptController {
       }
 
       const { id } = req.params;
-      const { paymentStatus } = req.body;
+      const { paymentStatus, paymentDate } = req.body;
 
-      const productionReceipt = await ProductionReceipt.findByIdAndUpdate(
-        id,
-        { paymentStatus },
-        { new: true, runValidators: true }
-      ).populate('productionOrderId', 'internalReference developmentId fabricType');
+      // ✅ VALIDAÇÃO: Verificar se o ID é válido
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid production receipt ID'
+        });
+      }
 
-      if (!productionReceipt) {
+      // ✅ PREPARAR: Dados para atualização
+      const updateData = { paymentStatus };
+
+      // ✅ OPCIONAL: Se fornecida paymentDate, incluir na atualização
+      if (paymentDate) {
+        updateData.paymentDate = paymentDate;
+      }
+
+      // ✅✅✅ CRÍTICO: Usar updateOne para BYPASSAR o middleware pre('save')
+      // Isso permite atualizar o status manualmente sem que o middleware
+      // recalcule baseado em paidAmount vs totalAmount
+      const result = await ProductionReceipt.updateOne(
+        { _id: id },
+        { $set: updateData }
+      );
+
+      // ✅ VERIFICAR: Se o documento foi encontrado
+      if (result.matchedCount === 0) {
         return res.status(404).json({
           success: false,
           message: 'Production receipt not found'
         });
       }
+
+      // ✅ BUSCAR: Documento atualizado com populate para retornar ao frontend
+      const productionReceipt = await ProductionReceipt.findById(id)
+        .populate('productionOrderId', 'internalReference developmentId fabricType');
 
       res.json({
         success: true,
@@ -915,6 +781,8 @@ class ProductionReceiptController {
         message: 'Payment status updated successfully'
       });
     } catch (error) {
+      console.error('Error updating payment status:', error);
+
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
