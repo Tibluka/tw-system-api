@@ -22,7 +22,7 @@ const validateCreateProductionSheet = [
       const entryDate = req.body.entryDate ? new Date(req.body.entryDate) : new Date();
       const expectedExitDate = new Date(value);
 
-      if (expectedExitDate <= entryDate) {
+      if (expectedExitDate < entryDate) {
         throw new Error('Expected exit date must be after entry date');
       }
       return true;
@@ -77,7 +77,7 @@ const validateUpdateProductionSheet = [
         const entryDate = new Date(req.body.entryDate);
         const expectedExitDate = new Date(value);
 
-        if (expectedExitDate <= entryDate) {
+        if (expectedExitDate < entryDate) {
           throw new Error('Expected exit date must be after entry date');
         }
       }

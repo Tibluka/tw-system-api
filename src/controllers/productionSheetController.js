@@ -33,6 +33,9 @@ class ProductionSheetController {
         delete query.active; // Remove o filtro para mostrar todos
       }
       
+      // Se há filtro de data, SEMPRE forçar active: true
+      const hasDateFilter = req.query.dateFrom || req.query.dateTo;
+      
       // Filter by stage
       if (stage) {
         query.stage = stage;
@@ -48,13 +51,73 @@ class ProductionSheetController {
         query.productionOrderId = productionOrderId;
       }
       
+      // Filter by date range (dateFrom and dateTo)
+      let dateFilter = null;
+      if (req.query.dateFrom || req.query.dateTo) {
+        // Se há filtro de data, SEMPRE forçar active: true
+        query.active = true;
+        
+        dateFilter = {};
+        
+        if (req.query.dateFrom) {
+          const dateFrom = new Date(req.query.dateFrom);
+          dateFrom.setHours(0, 0, 0, 0); // Start of day
+          dateFilter.$gte = dateFrom;
+        }
+        
+        if (req.query.dateTo) {
+          const dateTo = new Date(req.query.dateTo);
+          dateTo.setHours(23, 59, 59, 999); // End of day
+          dateFilter.$lte = dateTo;
+        }
+      }
+      
       // Text search
+      let searchFilter = null;
       if (search) {
         const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-        query.$or = [
-          { internalReference: { $regex: searchRegex, $options: 'i' } },
-          { productionNotes: { $regex: searchRegex, $options: 'i' } }
+        searchFilter = {
+          $or: [
+            { internalReference: { $regex: searchRegex, $options: 'i' } },
+            { productionNotes: { $regex: searchRegex, $options: 'i' } }
+          ]
+        };
+      }
+      
+      // Combine date and search filters
+      if (dateFilter && searchFilter) {
+        query.$and = [
+          {
+            $or: [
+              { entryDate: dateFilter },
+              { expectedExitDate: dateFilter },
+              {
+                $and: [
+                  { entryDate: { $lte: dateFilter.$lte || new Date() } },
+                  { expectedExitDate: { $gte: dateFilter.$gte || new Date(0) } }
+                ]
+              }
+            ]
+          },
+          searchFilter
         ];
+      } else if (dateFilter) {
+        query.$and = [
+          {
+            $or: [
+              { entryDate: dateFilter },
+              { expectedExitDate: dateFilter },
+              {
+                $and: [
+                  { entryDate: { $lte: dateFilter.$lte || new Date() } },
+                  { expectedExitDate: { $gte: dateFilter.$gte || new Date(0) } }
+                ]
+              }
+            ]
+          }
+        ];
+      } else if (searchFilter) {
+        Object.assign(query, searchFilter);
       }
 
       // Configurar ordenação
@@ -172,7 +235,38 @@ class ProductionSheetController {
         });
       }
 
-      const productionSheet = new ProductionSheet(req.body);
+      // Processar datas para evitar problemas de timezone
+      const productionSheetData = { ...req.body };
+      
+      if (productionSheetData.entryDate) {
+        // Se for formato YYYY-MM-DD, converter para UTC
+        if (typeof productionSheetData.entryDate === 'string' && productionSheetData.entryDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = productionSheetData.entryDate.split('-');
+          productionSheetData.entryDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        // Se for formato ISO com horário, extrair apenas a data e converter para UTC
+        else if (typeof productionSheetData.entryDate === 'string' && productionSheetData.entryDate.includes('T')) {
+          const datePart = productionSheetData.entryDate.split('T')[0];
+          const [year, month, day] = datePart.split('-');
+          productionSheetData.entryDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      }
+      
+      if (productionSheetData.expectedExitDate) {
+        // Se for formato YYYY-MM-DD, converter para UTC
+        if (typeof productionSheetData.expectedExitDate === 'string' && productionSheetData.expectedExitDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = productionSheetData.expectedExitDate.split('-');
+          productionSheetData.expectedExitDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        // Se for formato ISO com horário, extrair apenas a data e converter para UTC
+        else if (typeof productionSheetData.expectedExitDate === 'string' && productionSheetData.expectedExitDate.includes('T')) {
+          const datePart = productionSheetData.expectedExitDate.split('T')[0];
+          const [year, month, day] = datePart.split('-');
+          productionSheetData.expectedExitDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      }
+
+      const productionSheet = new ProductionSheet(productionSheetData);
       await productionSheet.save();
 
       // Buscar novamente para incluir os dados da production order (virtual populate)
@@ -241,8 +335,39 @@ class ProductionSheetController {
         });
       }
 
+      // Processar datas para evitar problemas de timezone
+      const updateData = { ...req.body };
+      
+      if (updateData.entryDate) {
+        // Se for formato YYYY-MM-DD, converter para UTC
+        if (typeof updateData.entryDate === 'string' && updateData.entryDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = updateData.entryDate.split('-');
+          updateData.entryDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        // Se for formato ISO com horário, extrair apenas a data e converter para UTC
+        else if (typeof updateData.entryDate === 'string' && updateData.entryDate.includes('T')) {
+          const datePart = updateData.entryDate.split('T')[0];
+          const [year, month, day] = datePart.split('-');
+          updateData.entryDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      }
+      
+      if (updateData.expectedExitDate) {
+        // Se for formato YYYY-MM-DD, converter para UTC
+        if (typeof updateData.expectedExitDate === 'string' && updateData.expectedExitDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = updateData.expectedExitDate.split('-');
+          updateData.expectedExitDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+        // Se for formato ISO com horário, extrair apenas a data e converter para UTC
+        else if (typeof updateData.expectedExitDate === 'string' && updateData.expectedExitDate.includes('T')) {
+          const datePart = updateData.expectedExitDate.split('T')[0];
+          const [year, month, day] = datePart.split('-');
+          updateData.expectedExitDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+        }
+      }
+
       // Atualizar campos manualmente
-      Object.assign(productionSheet, req.body);
+      Object.assign(productionSheet, updateData);
       await productionSheet.save();
 
       res.json({
