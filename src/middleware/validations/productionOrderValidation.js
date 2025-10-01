@@ -66,6 +66,16 @@ const validateCreateProductionOrder = [
     .withMessage('Observations must have maximum 1000 characters')
     .trim(),
 
+  body('hasCraft')
+    .optional()
+    .isBoolean()
+    .withMessage('HasCraft must be a boolean'),
+
+  body('fabricWidth')
+    .optional()
+    .isFloat({ min: 0, max: 500 })
+    .withMessage('Fabric width must be between 0 and 500'),
+
   body('status')
     .optional()
     .isIn(['CREATED', 'PILOT_PRODUCTION', 'PILOT_SENT', 'PILOT_APPROVED', 'PRODUCTION_STARTED', 'FINALIZED'])
@@ -137,6 +147,16 @@ const validateUpdateProductionOrder = [
     .isLength({ max: 1000 })
     .withMessage('Observations must have maximum 1000 characters')
     .trim(),
+
+  body('hasCraft')
+    .optional()
+    .isBoolean()
+    .withMessage('HasCraft must be a boolean'),
+
+  body('fabricWidth')
+    .optional()
+    .isFloat({ min: 0, max: 500 })
+    .withMessage('Fabric width must be between 0 and 500'),
 
   body('status')
     .optional()

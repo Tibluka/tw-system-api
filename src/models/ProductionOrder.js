@@ -70,6 +70,18 @@ const productionOrderSchema = new mongoose.Schema({
     maxlength: [1000, 'Observations must have maximum 1000 characters']
   },
 
+  // NOVOS CAMPOS - CRAFT E LARGURA DO TECIDO
+  hasCraft: {
+    type: Boolean,
+    default: false
+  },
+
+  fabricWidth: {
+    type: Number,
+    min: [0, 'Fabric width must be positive'],
+    max: [500, 'Fabric width must be reasonable']
+  },
+
   // CONTROL FIELDS
   active: {
     type: Boolean,
