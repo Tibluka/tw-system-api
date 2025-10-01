@@ -55,6 +55,19 @@ const productionSheetSchema = new mongoose.Schema({
     maxlength: [1000, 'Production notes must have maximum 1000 characters']
   },
 
+  // PARÂMETROS DE PRODUÇÃO
+  temperature: {
+    type: Number,
+    min: [0, 'Temperature must be positive'],
+    max: [500, 'Temperature must be reasonable']
+  },
+
+  velocity: {
+    type: Number,
+    min: [0, 'Velocity must be positive'],
+    max: [1000, 'Velocity must be reasonable']
+  },
+
   // CONTROL FIELDS
   active: {
     type: Boolean,

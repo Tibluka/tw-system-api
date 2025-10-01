@@ -231,21 +231,19 @@ class ProductionSheetController {
         }
       }
 
-      const productionSheet = await ProductionSheet.findByIdAndUpdate(
-        id,
-        req.body,
-        { 
-          new: true, 
-          runValidators: true 
-        }
-      );
-
+      // ✅ CORRIGIDO: Usar findById + save para garantir que os campos sejam atualizados
+      const productionSheet = await ProductionSheet.findById(id);
+      
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
           message: 'Production sheet not found'
         });
       }
+
+      // Atualizar campos manualmente
+      Object.assign(productionSheet, req.body);
+      await productionSheet.save();
 
       res.json({
         success: true,
