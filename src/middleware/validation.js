@@ -337,12 +337,6 @@ const validateCreateClient = [
     .isFloat({ min: 0 })
     .withMessage('Valor por metro deve ser um número positivo'),
 
-  body('values.valuePerPiece')
-    .notEmpty()
-    .withMessage('Valor por peça é obrigatório')
-    .isFloat({ min: 0 })
-    .withMessage('Valor por peça deve ser um número positivo'),
-
   body('active').optional().isBoolean().withMessage('Campo active deve ser verdadeiro ou falso')
 ];
 
@@ -433,11 +427,6 @@ const validateUpdateClient = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Valor por metro deve ser um número positivo'),
-
-  body('values.valuePerPiece')
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage('Valor por peça deve ser um número positivo'),
 
   body('active').optional().isBoolean().withMessage('Campo active deve ser verdadeiro ou falso')
 ];

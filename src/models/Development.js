@@ -166,7 +166,7 @@ developmentSchema.pre('save', async function(next) {
       
       // Find the last development for this year and client
       const lastDevelopment = await this.constructor.findOne({
-        internalReference: new RegExp(`^${currentYear}${clientAcronym}\\d{4}$`)
+        internalReference: new RegExp(`^${clientAcronym}${currentYear}\\d{4}$`)
       }).sort({ internalReference: -1 });
       
       let sequential = 1;
@@ -177,8 +177,8 @@ developmentSchema.pre('save', async function(next) {
       
       const sequentialFormatted = sequential.toString().padStart(4, '0');
       
-      // Final format: 25ABC0001
-      this.internalReference = `${currentYear}${clientAcronym}${sequentialFormatted}`;
+      // Final format: ABC250001 (SIGLA + ANO + CONTADOR)
+      this.internalReference = `${clientAcronym}${currentYear}${sequentialFormatted}`;
       
     } catch (error) {
       return next(error);

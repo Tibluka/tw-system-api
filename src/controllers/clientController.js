@@ -493,8 +493,7 @@ class ClientController {
             total: { $sum: 1 },
             ativos: { $sum: { $cond: ['$active', 1, 0] } },
             inativos: { $sum: { $cond: ['$active', 0, 1] } },
-            valorMedioMetro: { $avg: '$values.valuePerMeter' },
-            valorMedioPeca: { $avg: '$values.valuePerPiece' }
+            valorMedioMetro: { $avg: '$values.valuePerMeter' }
           }
         }
       ]);

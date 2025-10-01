@@ -105,11 +105,6 @@ const clientSchema = new mongoose.Schema(
         type: Number,
         required: [true, 'Valor por metro é obrigatório'],
         min: [0, 'Valor por metro deve ser positivo']
-      },
-      valuePerPiece: {
-        type: Number,
-        required: [true, 'Valor por peça é obrigatório'],
-        min: [0, 'Valor por peça deve ser positivo']
       }
     },
     active: {
