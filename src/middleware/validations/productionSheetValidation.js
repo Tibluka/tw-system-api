@@ -132,10 +132,29 @@ const validateMachineAvailability = async (req, res, next) => {
     const entry = new Date(entryDate);
     const exit = new Date(expectedExitDate);
 
+    // ✅ CORRIGIDO: Verificar se é uma atualização e se a máquina mudou
+    let shouldCheckAvailability = true;
+    
+    if (req.params.id) {
+      // É uma atualização - verificar se a máquina mudou
+      const currentSheet = await ProductionSheet.findById(req.params.id);
+      
+      if (currentSheet && currentSheet.machine === parseInt(machine)) {
+        // A máquina não mudou, não precisa verificar disponibilidade
+        shouldCheckAvailability = false;
+      }
+    }
+
+    if (!shouldCheckAvailability) {
+      return next();
+    }
+
     // Verificar se há conflitos de horário na mesma máquina
+    // ✅ CORRIGIDO: Apenas fichas não finalizadas bloqueiam a máquina
     const conflictingSheets = await ProductionSheet.find({
       machine: parseInt(machine),
       active: true,
+      stage: { $ne: 'FINISHED' }, // ✅ Apenas fichas não finalizadas
       _id: { $ne: req.params.id }, // Excluir o próprio sheet se for update
       $or: [
         {
