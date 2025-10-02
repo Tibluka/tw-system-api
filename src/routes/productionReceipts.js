@@ -52,12 +52,12 @@ router.get('/overdue',
   productionReceiptController.getOverdue
 );
 
-// @route   GET /api/v1/production-receipts/by-production-order/:productionOrderId
-// @desc    Get production receipt by production order ID
+// @route   GET /api/v1/production-receipts/by-delivery-sheet/:deliverySheetId
+// @desc    Get production receipt by delivery sheet ID
 // @access  Private
-router.get('/by-production-order/:productionOrderId', 
+router.get('/by-delivery-sheet/:deliverySheetId', 
   validateObjectId, 
-  productionReceiptController.getByProductionOrder
+  productionReceiptController.getByDeliverySheet
 );
 
 // @route   GET /api/v1/production-receipts/:id

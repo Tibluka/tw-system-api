@@ -162,6 +162,7 @@ productionReceiptSchema.pre('save', function(next) {
   // Se valor pago = total, marcar como PAID
   if (this.paidAmount >= this.totalAmount && this.paymentStatus !== 'PAID') {
     this.paymentStatus = 'PAID';
+    // Só definir paymentDate se não foi fornecido explicitamente
     if (!this.paymentDate) {
       this.paymentDate = new Date();
     }
@@ -170,7 +171,10 @@ productionReceiptSchema.pre('save', function(next) {
   // Se valor pago < total, marcar como PENDING
   if (this.paidAmount < this.totalAmount && this.paymentStatus === 'PAID') {
     this.paymentStatus = 'PENDING';
-    this.paymentDate = undefined;
+    // Só limpar paymentDate se não foi fornecido explicitamente
+    if (!this.isModified('paymentDate')) {
+      this.paymentDate = undefined;
+    }
   }
   
   next();
@@ -301,16 +305,16 @@ productionReceiptSchema.statics.getStatistics = async function() {
 };
 
 // Static method to get by production order
-productionReceiptSchema.statics.getByProductionOrder = async function(productionOrderId) {
+productionReceiptSchema.statics.getByDeliverySheet = async function(deliverySheetId) {
   return await this.findOne({ 
-    productionOrderId: productionOrderId,
+    deliverySheetId: deliverySheetId,
     active: true 
   });
 };
 
 // Indexes for optimized search
 productionReceiptSchema.index({ internalReference: 1 });
-productionReceiptSchema.index({ productionOrderId: 1 });
+productionReceiptSchema.index({ deliverySheetId: 1 });
 productionReceiptSchema.index({ paymentStatus: 1 });
 productionReceiptSchema.index({ paymentMethod: 1 });
 productionReceiptSchema.index({ issueDate: -1 });

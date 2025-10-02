@@ -15,7 +15,7 @@ class ProductionReceiptController {
     this.update = this.update.bind(this);
     this.destroy = this.destroy.bind(this);
     this.stats = this.stats.bind(this);
-    this.getByProductionOrder = this.getByProductionOrder.bind(this);
+    this.getByDeliverySheet = this.getByDeliverySheet.bind(this);
     this.getOverdue = this.getOverdue.bind(this);
     this.processPayment = this.processPayment.bind(this);
     this.updatePaymentStatus = this.updatePaymentStatus.bind(this);
@@ -492,17 +492,17 @@ class ProductionReceiptController {
     }
   }
 
-  // GET /production-receipts/by-production-order/:productionOrderId
-  async getByProductionOrder(req, res) {
+  // GET /production-receipts/by-delivery-sheet/:deliverySheetId
+  async getByDeliverySheet(req, res) {
     try {
-      const { productionOrderId } = req.params;
+      const { deliverySheetId } = req.params;
 
-      const productionReceipt = await ProductionReceipt.getByProductionOrder(productionOrderId);
+      const productionReceipt = await ProductionReceipt.getByDeliverySheet(deliverySheetId);
 
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found for this production order'
+          message: 'Production receipt not found for this delivery sheet'
         });
       }
 
@@ -514,7 +514,7 @@ class ProductionReceiptController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production order ID'
+          message: 'Invalid delivery sheet ID'
         });
       }
 
@@ -557,10 +557,38 @@ class ProductionReceiptController {
       // Verificar se é um ObjectId válido ou buscar por internalReference
       if (mongoose.Types.ObjectId.isValid(id)) {
         productionReceipt = await ProductionReceipt.findById(id)
-          .populate('productionOrderId', 'internalReference developmentId fabricType');
+          .populate({
+            path: 'deliverySheetId',
+            populate: {
+              path: 'productionSheetId',
+              populate: {
+                path: 'productionOrderId',
+                populate: {
+                  path: 'developmentId',
+                  populate: {
+                    path: 'clientId'
+                  }
+                }
+              }
+            }
+          });
       } else {
         productionReceipt = await ProductionReceipt.findOne({ internalReference: id })
-          .populate('productionOrderId', 'internalReference developmentId fabricType');
+          .populate({
+            path: 'deliverySheetId',
+            populate: {
+              path: 'productionSheetId',
+              populate: {
+                path: 'productionOrderId',
+                populate: {
+                  path: 'developmentId',
+                  populate: {
+                    path: 'clientId'
+                  }
+                }
+              }
+            }
+          });
       }
 
       if (!productionReceipt) {
@@ -700,39 +728,6 @@ class ProductionReceiptController {
         });
       }
 
-      // ✅ VALIDAÇÃO: Verificar se paidAmount não excede totalAmount
-      if (updateData.paidAmount !== undefined) {
-        if (updateData.paidAmount > productionReceipt.totalAmount) {
-          return res.status(400).json({
-            success: false,
-            message: 'Paid amount cannot be greater than total amount',
-            details: {
-              paidAmount: updateData.paidAmount,
-              totalAmount: productionReceipt.totalAmount,
-              maxAllowed: productionReceipt.totalAmount
-            }
-          });
-        }
-      }
-
-      // ✅ VALIDAÇÃO: Se totalAmount está sendo alterado, verificar se paidAmount não excede
-      if (updateData.totalAmount !== undefined) {
-        const newTotalAmount = updateData.totalAmount;
-        const currentPaidAmount = updateData.paidAmount !== undefined ? updateData.paidAmount : productionReceipt.paidAmount;
-        
-        if (currentPaidAmount > newTotalAmount) {
-          return res.status(400).json({
-            success: false,
-            message: 'Paid amount cannot be greater than total amount',
-            details: {
-              paidAmount: currentPaidAmount,
-              totalAmount: newTotalAmount,
-              maxAllowed: newTotalAmount
-            }
-          });
-        }
-      }
-
       // ✅ ATUALIZAR: Aplicar as mudanças
       Object.assign(productionReceipt, updateData);
 
@@ -742,8 +737,22 @@ class ProductionReceiptController {
       // ✅ SALVAR: Com validações
       await productionReceipt.save();
 
-      // ✅ POPULATE: Para retornar dados completos
-      await productionReceipt.populate('productionOrderId', 'internalReference developmentId fabricType');
+      // ✅ POPULATE: Para retornar dados completos do DeliverySheet
+      await productionReceipt.populate({
+        path: 'deliverySheetId',
+        populate: {
+          path: 'productionSheetId',
+          populate: {
+            path: 'productionOrderId',
+            populate: {
+              path: 'developmentId',
+              populate: {
+                path: 'clientId'
+              }
+            }
+          }
+        }
+      });
 
       res.json({
         success: true,
@@ -913,7 +922,21 @@ class ProductionReceiptController {
 
       // ✅ BUSCAR: Documento atualizado com populate para retornar ao frontend
       const productionReceipt = await ProductionReceipt.findById(id)
-        .populate('productionOrderId', 'internalReference developmentId fabricType');
+        .populate({
+          path: 'deliverySheetId',
+          populate: {
+            path: 'productionSheetId',
+            populate: {
+              path: 'productionOrderId',
+              populate: {
+                path: 'developmentId',
+                populate: {
+                  path: 'clientId'
+                }
+              }
+            }
+          }
+        });
 
       res.json({
         success: true,
@@ -947,7 +970,21 @@ class ProductionReceiptController {
         id,
         { active: true },
         { new: true }
-      ).populate('productionOrderId', 'internalReference developmentId fabricType');
+      ).populate({
+        path: 'deliverySheetId',
+        populate: {
+          path: 'productionSheetId',
+          populate: {
+            path: 'productionOrderId',
+            populate: {
+              path: 'developmentId',
+              populate: {
+                path: 'clientId'
+              }
+            }
+          }
+        }
+      });
 
       if (!productionReceipt) {
         return res.status(404).json({
