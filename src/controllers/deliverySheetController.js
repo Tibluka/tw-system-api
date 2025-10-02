@@ -73,102 +73,51 @@ class DeliverySheetController {
       const sortOrder = order === 'desc' ? -1 : 1;
       const sortField = ['internalReference', 'deliveryDate', 'status', 'createdAt', 'updatedAt'].includes(sortBy) ? sortBy : 'createdAt';
 
-      // Buscar delivery sheets com aggregation pipeline para controle total
+      // Buscar delivery sheets com populate para preservar todos os campos
       const [deliverySheets, totalCount] = await Promise.all([
-        DeliverySheet.aggregate([
-          { $match: query },
-          {
-            $lookup: {
-              from: 'productionsheets',
-              localField: 'productionSheetId',
-              foreignField: '_id',
-              as: 'productionSheet'
-            }
-          },
-          { $unwind: '$productionSheet' },
-          {
-            $lookup: {
-              from: 'productionorders',
-              localField: 'productionSheet.productionOrderId',
-              foreignField: '_id',
-              as: 'productionOrder'
-            }
-          },
-          { $unwind: '$productionOrder' },
-          {
-            $lookup: {
-              from: 'developments',
-              localField: 'productionOrder.developmentId',
-              foreignField: '_id',
-              as: 'development'
-            }
-          },
-          { $unwind: '$development' },
-          {
-            $lookup: {
-              from: 'clients',
-              localField: 'development.clientId',
-              foreignField: '_id',
-              as: 'client'
-            }
-          },
-          { $unwind: '$client' },
-          {
-            $project: {
-              _id: 1,
-              internalReference: 1,
-              deliveryDate: 1,
-              totalValue: 1,
-              notes: 1,
-              invoiceNumber: 1,
-              address: 1,
-              status: 1,
-              active: 1,
-              createdAt: 1,
-              updatedAt: 1,
-              productionSheet: {
-                _id: '$productionSheet._id',
-                internalReference: '$productionSheet.internalReference',
-                entryDate: '$productionSheet.entryDate',
-                expectedExitDate: '$productionSheet.expectedExitDate',
-                machine: '$productionSheet.machine',
-                stage: '$productionSheet.stage',
-                temperature: '$productionSheet.temperature',
-                velocity: '$productionSheet.velocity',
-                productionOrder: {
-                  _id: '$productionOrder._id',
-                  internalReference: '$productionOrder.internalReference',
-                  fabricType: '$productionOrder.fabricType',
-                  observations: '$productionOrder.observations',
-                  hasCraft: '$productionOrder.hasCraft',
-                  fabricWidth: '$productionOrder.fabricWidth',
-                  development: {
-                    _id: '$development._id',
-                    internalReference: '$development.internalReference',
-                    clientReference: '$development.clientReference',
-                    pieceImage: '$development.pieceImage',
-                    productionType: '$development.productionType',
-                    status: '$development.status',
-                    client: {
-                      _id: '$client._id',
-                      acronym: '$client.acronym',
-                      companyName: '$client.companyName',
-                      cnpj: '$client.cnpj',
-                      contact: '$client.contact',
-                      address: '$client.address',
-                      values: '$client.values'
-                    }
-                  }
+        DeliverySheet.find(query)
+          .sort({ [sortField]: sortOrder })
+          .skip(skip)
+          .limit(limitNum)
+          .populate({
+            path: 'productionSheetId',
+            populate: {
+              path: 'productionOrderId',
+              populate: {
+                path: 'developmentId',
+                populate: {
+                  path: 'clientId'
                 }
               }
             }
-          },
-          { $sort: { [sortField]: sortOrder } },
-          { $skip: skip },
-          { $limit: limitNum }
-        ]),
+          }),
         DeliverySheet.countDocuments(query)
       ]);
+
+      // Renomear productionSheetId para productionSheet e ajustar estrutura aninhada
+      const formattedDeliverySheets = deliverySheets.map(sheet => {
+        const sheetObj = JSON.parse(JSON.stringify(sheet));
+        const productionSheet = sheetObj.productionSheetId;
+        if (productionSheet && productionSheet.productionOrderId) {
+          const productionOrder = productionSheet.productionOrderId;
+          if (productionOrder && productionOrder.developmentId) {
+            const development = productionOrder.developmentId;
+            if (development && development.clientId) {
+              development.client = development.clientId;
+              delete development.clientId;
+            }
+            productionOrder.development = development;
+            delete productionOrder.developmentId;
+          }
+          productionSheet.productionOrder = productionOrder;
+          delete productionSheet.productionOrderId;
+        }
+        return {
+          ...sheetObj,
+          productionSheet,
+          productionSheetId: undefined
+        };
+      });
 
       // Calcular informações de paginação
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -177,7 +126,7 @@ class DeliverySheetController {
       
       res.json({
         success: true,
-        data: deliverySheets,
+        data: formattedDeliverySheets,
         pagination: {
           currentPage: pageNum,
           totalPages,
