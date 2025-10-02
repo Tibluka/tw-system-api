@@ -8,57 +8,59 @@ const validateCreateProductionOrder = [
     .isMongoId()
     .withMessage('Development ID must be a valid MongoDB ObjectId'),
 
-  body('productionType.rotary.enabled')
-    .optional()
-    .isBoolean()
-    .withMessage('Rotary enabled must be a boolean'),
+  body('productionType')
+    .notEmpty()
+    .withMessage('Production type is required')
+    .isObject()
+    .withMessage('Production type must be an object'),
 
-  body('productionType.rotary.meters')
-    .optional()
-    .isFloat({ min: 0.1 })
-    .withMessage('Rotary meters must be at least 0.1'),
+  body('productionType.type')
+    .notEmpty()
+    .withMessage('Production type type is required')
+    .isIn(['rotary', 'localized'])
+    .withMessage('Production type must be rotary or localized'),
 
-  body('productionType.rotary.negotiatedPrice')
+  // Para rotary: metros e fabricType obrigatórios
+  body('productionType.meters')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Negotiated price must be positive'),
+    .withMessage('Meters must be a positive number'),
 
-  body('productionType.localized.enabled')
+  body('productionType.fabricType')
     .optional()
-    .isBoolean()
-    .withMessage('Localized enabled must be a boolean'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Fabric type must be between 1 and 100 characters'),
 
-  body('productionType.localized.sizes.xs')
+  // Para localized: variantes obrigatórias
+  body('productionType.variants')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('Variants must be an array with at least one item'),
+
+  body('productionType.variants.*.variantName')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Variant name must be between 1 and 100 characters'),
+
+  body('productionType.variants.*.fabricType')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Variant fabric type must be between 1 and 100 characters'),
+
+  body('productionType.variants.*.quantities')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('Quantities must be an array with at least one item'),
+
+  body('productionType.variants.*.quantities.*.size')
+    .optional()
+    .isIn(['PP', 'P', 'M', 'G', 'G1', 'G2'])
+    .withMessage('Size must be one of: PP, P, M, G, G1, G2'),
+
+  body('productionType.variants.*.quantities.*.value')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('XS size must be a positive integer'),
-
-  body('productionType.localized.sizes.s')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('S size must be a positive integer'),
-
-  body('productionType.localized.sizes.m')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('M size must be a positive integer'),
-
-  body('productionType.localized.sizes.l')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('L size must be a positive integer'),
-
-  body('productionType.localized.sizes.xl')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XL size must be a positive integer'),
-
-  body('fabricType')
-    .notEmpty()
-    .withMessage('Fabric type is required')
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Fabric type must be between 2 and 100 characters')
-    .trim(),
+    .withMessage('Quantity value must be a positive integer'),
 
   body('observations')
     .optional()
@@ -69,7 +71,7 @@ const validateCreateProductionOrder = [
   body('hasCraft')
     .optional()
     .isBoolean()
-    .withMessage('HasCraft must be a boolean'),
+    .withMessage('Has craft must be a boolean'),
 
   body('fabricWidth')
     .optional()
@@ -91,56 +93,57 @@ const validateUpdateProductionOrder = [
     .isMongoId()
     .withMessage('Development ID must be a valid MongoDB ObjectId'),
 
-  body('productionType.rotary.enabled')
+  body('productionType')
     .optional()
-    .isBoolean()
-    .withMessage('Rotary enabled must be a boolean'),
+    .isObject()
+    .withMessage('Production type must be an object'),
 
-  body('productionType.rotary.meters')
+  body('productionType.type')
     .optional()
-    .isFloat({ min: 0.1 })
-    .withMessage('Rotary meters must be at least 0.1'),
+    .isIn(['rotary', 'localized'])
+    .withMessage('Production type must be rotary or localized'),
 
-  body('productionType.rotary.negotiatedPrice')
+  // Para rotary: metros e fabricType
+  body('productionType.meters')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Negotiated price must be positive'),
+    .withMessage('Meters must be a positive number'),
 
-  body('productionType.localized.enabled')
+  body('productionType.fabricType')
     .optional()
-    .isBoolean()
-    .withMessage('Localized enabled must be a boolean'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Fabric type must be between 1 and 100 characters'),
 
-  body('productionType.localized.sizes.xs')
+  // Para localized: variantes
+  body('productionType.variants')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('Variants must be an array with at least one item'),
+
+  body('productionType.variants.*.variantName')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Variant name must be between 1 and 100 characters'),
+
+  body('productionType.variants.*.fabricType')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Variant fabric type must be between 1 and 100 characters'),
+
+  body('productionType.variants.*.quantities')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('Quantities must be an array with at least one item'),
+
+  body('productionType.variants.*.quantities.*.size')
+    .optional()
+    .isIn(['PP', 'P', 'M', 'G', 'G1', 'G2'])
+    .withMessage('Size must be one of: PP, P, M, G, G1, G2'),
+
+  body('productionType.variants.*.quantities.*.value')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('XS size must be a positive integer'),
-
-  body('productionType.localized.sizes.s')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('S size must be a positive integer'),
-
-  body('productionType.localized.sizes.m')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('M size must be a positive integer'),
-
-  body('productionType.localized.sizes.l')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('L size must be a positive integer'),
-
-  body('productionType.localized.sizes.xl')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('XL size must be a positive integer'),
-
-  body('fabricType')
-    .optional()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Fabric type must be between 2 and 100 characters')
-    .trim(),
+    .withMessage('Quantity value must be a positive integer'),
 
   body('observations')
     .optional()
@@ -151,7 +154,7 @@ const validateUpdateProductionOrder = [
   body('hasCraft')
     .optional()
     .isBoolean()
-    .withMessage('HasCraft must be a boolean'),
+    .withMessage('Has craft must be a boolean'),
 
   body('fabricWidth')
     .optional()
@@ -166,6 +169,78 @@ const validateUpdateProductionOrder = [
   body('active').optional().isBoolean().withMessage('Active field must be a boolean')
 ];
 
+// Validação customizada para production type
+const validateAndTransformProductionType = (req, res, next) => {
+  try {
+    const { productionType } = req.body;
+
+    if (!productionType) {
+      return next();
+    }
+
+    // Validações específicas por tipo
+    if (productionType.type === 'rotary') {
+      // Para rotary: metros e fabricType são obrigatórios
+      if (!productionType.meters || productionType.meters <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Meters is required for rotary production type'
+        });
+      }
+      if (!productionType.fabricType || productionType.fabricType.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Fabric type is required for rotary production type'
+        });
+      }
+    } else if (productionType.type === 'localized') {
+      // Para localized: variantes são obrigatórias
+      if (!productionType.variants || !Array.isArray(productionType.variants) || productionType.variants.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one variant is required for localized production type'
+        });
+      }
+
+      // Validar cada variante
+      for (let i = 0; i < productionType.variants.length; i++) {
+        const variant = productionType.variants[i];
+        
+        if (!variant.variantName || variant.variantName.trim() === '') {
+          return res.status(400).json({
+            success: false,
+            message: `Variant ${i + 1}: variant name is required`
+          });
+        }
+        
+        if (!variant.fabricType || variant.fabricType.trim() === '') {
+          return res.status(400).json({
+            success: false,
+            message: `Variant ${i + 1}: fabric type is required`
+          });
+        }
+        
+        if (!variant.quantities || !Array.isArray(variant.quantities) || variant.quantities.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Variant ${i + 1}: at least one quantity is required`
+          });
+        }
+
+        // Quantidades são aceitas sem validação - aceitar qualquer valor do usuário
+      }
+    }
+
+    next();
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: 'Error processing production type',
+      error: error.message
+    });
+  }
+};
+
 // Validação para atualização de status de production order
 const validateStatusUpdateProductionOrder = [
   body('status')
@@ -178,5 +253,6 @@ const validateStatusUpdateProductionOrder = [
 module.exports = {
   validateCreateProductionOrder,
   validateUpdateProductionOrder,
-  validateStatusUpdateProductionOrder
+  validateStatusUpdateProductionOrder,
+  validateAndTransformProductionType
 };

@@ -6,7 +6,8 @@ const { validateObjectId, validatePagination } = require('../middleware/validati
 const {
   validateCreateProductionOrder,
   validateUpdateProductionOrder,
-  validateStatusUpdateProductionOrder
+  validateStatusUpdateProductionOrder,
+  validateAndTransformProductionType
 } = require('../middleware/validation');
 
 const router = express.Router();
@@ -64,6 +65,7 @@ router.get('/:id',
 // @access  Private
 router.post('/', 
   validateCreateProductionOrder,
+  validateAndTransformProductionType,
   productionOrderController.store
 );
 
@@ -73,6 +75,7 @@ router.post('/',
 router.put('/:id', 
   validateObjectId,
   validateUpdateProductionOrder,
+  validateAndTransformProductionType,
   productionOrderController.update
 );
 

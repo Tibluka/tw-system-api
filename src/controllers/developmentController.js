@@ -195,25 +195,7 @@ async index(req, res) {
         });
       }
   
-      // ✅ NOVA LÓGICA - Processar productionType baseado no tipo
-      if (req.body.productionType.type === 'localized') {
-        // Se não tiver additionalInfo ou sizes, criar com tamanhos padrão
-        if (!req.body.productionType.additionalInfo) {
-          req.body.productionType.additionalInfo = {
-            variant: '',
-            sizes: [
-              { size: 'PP', value: 0 },
-              { size: 'P', value: 0 },
-              { size: 'M', value: 0 },
-              { size: 'G', value: 0 },
-              { size: 'G1', value: 0 },
-              { size: 'G2', value: 0 }
-            ]
-          };
-        }
-      } else {
-        req.body.productionType.meters = 0
-      }
+      // ✅ NOVA ESTRUTURA - Não transformar dados, usar estrutura direta
   
       const development = new Development(req.body);
       await development.save();
@@ -283,25 +265,7 @@ async index(req, res) {
         }
       }
 
-      // ✅ NOVA LÓGICA - Processar productionType baseado no tipo
-      if (req.body.productionType.type === 'localized') {
-        // Se não tiver additionalInfo ou sizes, criar com tamanhos padrão
-        if (!req.body.productionType.additionalInfo) {
-          req.body.productionType.additionalInfo = {
-            variant: '',
-            sizes: [
-              { size: 'PP', value: 0 },
-              { size: 'P', value: 0 },
-              { size: 'M', value: 0 },
-              { size: 'G', value: 0 },
-              { size: 'G1', value: 0 },
-              { size: 'G2', value: 0 }
-            ]
-          };
-        }
-      } else {
-        req.body.productionType.meters = 0
-      }
+      // ✅ NOVA ESTRUTURA - Não transformar dados, usar estrutura direta
   
       
       const development = await Development.findByIdAndUpdate(

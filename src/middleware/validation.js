@@ -32,6 +32,7 @@ module.exports = {
   validateCreateProductionOrder: validations.validateCreateProductionOrder,
   validateUpdateProductionOrder: validations.validateUpdateProductionOrder,
   validateStatusUpdateProductionOrder: validations.validateStatusUpdateProductionOrder,
+  validateAndTransformProductionType: validations.validateAndTransformProductionType,
 
   // Production Sheet validations
   validateCreateProductionSheet: validations.validateCreateProductionSheet,

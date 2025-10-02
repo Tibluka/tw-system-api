@@ -79,7 +79,6 @@ router.get('/:id',
 // @access  Private
 router.post('/', 
   validateCreateDevelopment,
-  validateAndTransformProductionType,
   developmentController.store
 );
 

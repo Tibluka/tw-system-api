@@ -14,17 +14,38 @@ const productionOrderSchema = new mongoose.Schema({
       enum: ['rotary', 'localized'],
       required: [true, 'Production type is required']
     },
+    // Para rotary: metros obrigatórios
     meters: {
       type: Number,
-      min: [0, 'Meters must be positive']
+      min: [0, 'Meters must be positive'],
+      required: function() {
+        return this.productionType && this.productionType.type === 'rotary';
+      }
     },
-    additionalInfo: {
-      variant: {
+    // Para rotary: tipo de tecido no nível principal
+    fabricType: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Fabric type must have maximum 100 characters'],
+      required: function() {
+        return this.productionType && this.productionType.type === 'rotary';
+      }
+    },
+    // Para localized: array de variantes
+    variants: [{
+      variantName: {
         type: String,
+        required: true,
         trim: true,
-        maxlength: [100, 'Variant must have maximum 100 characters']
+        maxlength: [100, 'Variant name must have maximum 100 characters']
       },
-      sizes: [{
+      fabricType: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: [100, 'Fabric type must have maximum 100 characters']
+      },
+      quantities: [{
         size: {
           type: String,
           required: true,
@@ -34,11 +55,10 @@ const productionOrderSchema = new mongoose.Schema({
         },
         value: {
           type: Number,
-          required: true,
-          min: [0, 'Size value must be positive']
+          required: true
         }
       }]
-    }
+    }]
   },
 
   // DADOS COPIADOS (para não depender de populate)
@@ -57,12 +77,7 @@ const productionOrderSchema = new mongoose.Schema({
   },
 
   // DADOS ESPECÍFICOS DA PRODUÇÃO
-  fabricType: {
-    type: String,
-    required: [true, 'Fabric type is required'],
-    trim: true,
-    maxlength: [100, 'Fabric type must have maximum 100 characters']
-  },
+  // fabricType movido para productionType.fabricType (rotary) ou productionType.variants[].fabricType (localized)
 
   observations: {
     type: String,
@@ -109,25 +124,84 @@ productionOrderSchema.set('toObject', {
   versionKey: false 
 });
 
-productionOrderSchema.pre('save', function(next) {
-  if (this.productionType) {
+productionOrderSchema.pre('save', async function(next) {
+  try {
+    // Se não tiver productionType definido, buscar do development
+    if (!this.productionType || !this.productionType.type) {
+      const Development = mongoose.model('Development');
+      const development = await Development.findById(this.developmentId);
+      
+      if (!development) {
+        return next(new Error('Development not found'));
+      }
+
+      // Gerar estrutura padrão baseada no tipo do development
+      if (development.productionType === 'rotary') {
+        this.productionType = {
+          type: 'rotary',
+          meters: 0,
+          fabricType: ''
+        };
+      } else if (development.productionType === 'localized') {
+        this.productionType = {
+          type: 'localized',
+          variants: [
+            {
+              variantName: '',
+              fabricType: '',
+              quantities: [
+                { size: 'PP', value: 0 },
+                { size: 'P', value: 0 },
+                { size: 'M', value: 0 },
+                { size: 'G', value: 0 },
+                { size: 'G1', value: 0 },
+                { size: 'G2', value: 0 }
+              ]
+            }
+          ]
+        };
+      }
+    }
+
+    // Validações específicas por tipo
     if (this.productionType.type === 'rotary') {
-      if (this.productionType.meters === undefined || this.productionType.meters < 0) {
+      if (!this.productionType.meters || this.productionType.meters < 0) {
         return next(new Error('Meters is required and must be positive for rotary production type'));
+      }
+      if (!this.productionType.fabricType || this.productionType.fabricType.trim() === '') {
+        return next(new Error('Fabric type is required for rotary production type'));
       }
     }
 
     if (this.productionType.type === 'localized') {
-      if (!this.productionType.additionalInfo) {
-        return next(new Error('Additional info is required for localized production type'));
+      if (!this.productionType.variants || !Array.isArray(this.productionType.variants) || this.productionType.variants.length === 0) {
+        return next(new Error('At least one variant is required for localized production type'));
       }
-      
-      if (this.productionType.additionalInfo.variant === undefined) {
-        return next(new Error('Variant is required in additional info for localized production type'));
+
+      // Validar cada variante
+      for (let i = 0; i < this.productionType.variants.length; i++) {
+        const variant = this.productionType.variants[i];
+        
+        if (!variant.variantName || variant.variantName.trim() === '') {
+          return next(new Error(`Variant ${i + 1}: variant name is required`));
+        }
+        
+        if (!variant.fabricType || variant.fabricType.trim() === '') {
+          return next(new Error(`Variant ${i + 1}: fabric type is required`));
+        }
+        
+        if (!variant.quantities || !Array.isArray(variant.quantities) || variant.quantities.length === 0) {
+          return next(new Error(`Variant ${i + 1}: at least one quantity is required`));
+        }
+
+        // Quantidades são aceitas sem validação - aceitar qualquer valor do usuário
       }
     }
+
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 // Middleware para sempre popular development automaticamente

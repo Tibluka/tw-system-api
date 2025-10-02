@@ -48,38 +48,11 @@ const developmentSchema = new mongoose.Schema({
     }
   },
 
-  // PRODUCTION TYPE - NOVA ESTRUTURA COM OBJETO COMPLETO
+  // PRODUCTION TYPE - SIMPLIFICADO PARA STRING
   productionType: {
-    type: {
-      type: String,
-      enum: ['rotary', 'localized'],
-      required: [true, 'Production type is required']
-    },
-    meters: {
-      type: Number,
-      min: [0, 'Meters must be positive']
-    },
-    additionalInfo: {
-      variant: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Variant must have maximum 100 characters']
-      },
-      sizes: [{
-        size: {
-          type: String,
-          required: true,
-          trim: true,
-          uppercase: true,
-          enum: ['PP', 'P', 'M', 'G', 'G1', 'G2']
-        },
-        value: {
-          type: Number,
-          required: true,
-          min: [0, 'Size value must be positive']
-        }
-      }]
-    }
+    type: String,
+    enum: ['rotary', 'localized'],
+    required: [true, 'Production type is required']
   },
 
   // STATUS DO DESENVOLVIMENTO
@@ -116,29 +89,12 @@ developmentSchema.set('toObject', {
   versionKey: false 
 });
 
-// Middleware de validação customizada - ADICIONADO
+// Middleware de validação customizada - SIMPLIFICADO
 developmentSchema.pre('save', function(next) {
-  // Validar estrutura do productionType
-  if (this.productionType) {
-    if (this.productionType.type === 'rotary') {
-      // Para rotary, meters é obrigatório
-      if (this.productionType.meters === undefined || this.productionType.meters < 0) {
-        return next(new Error('Meters is required and must be positive for rotary production type'));
-      }
-    }
-
-    if (this.productionType.type === 'localized') {
-      // Para localized, additionalInfo é obrigatório
-      if (!this.productionType.additionalInfo) {
-        return next(new Error('Additional info is required for localized production type'));
-      }
-      
-      if (this.productionType.additionalInfo.variant === undefined) {
-        return next(new Error('Variant is required in additional info for localized production type'));
-      }
-    }
+  // Validação simples: apenas verificar se productionType é válido
+  if (this.productionType && !['rotary', 'localized'].includes(this.productionType)) {
+    return next(new Error('Production type must be either rotary or localized'));
   }
-
   next();
 });
 
