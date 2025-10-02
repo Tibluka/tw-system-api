@@ -134,26 +134,29 @@ productionReceiptSchema.pre(/^find/, function() {
   });
 });
 
-// Copy internalReference from ProductionOrder before saving
+// Copy internalReference from DeliverySheet before saving
 productionReceiptSchema.pre('save', async function(next) {
-  if (this.isNew && this.productionOrderId) {
+  console.log('ProductionReceipt pre-save hook triggered');
+  console.log('isNew:', this.isNew);
+  console.log('deliverySheetId:', this.deliverySheetId);
+  console.log('internalReference:', this.internalReference);
+  
+  if (this.isNew && this.deliverySheetId && !this.internalReference) {
     try {
-      const ProductionOrder = mongoose.model('ProductionOrder');
-      const productionOrder = await ProductionOrder.findById(this.productionOrderId);
+      const DeliverySheet = mongoose.model('DeliverySheet');
+      const deliverySheet = await DeliverySheet.findById(this.deliverySheetId);
       
-      if (!productionOrder) {
-        return next(new Error('Production order not found'));
+      if (!deliverySheet) {
+        return next(new Error('Delivery sheet not found'));
       }
       
-      // Verificar se production order está finalizada
-      if (productionOrder.status !== 'FINALIZED') {
-        return next(new Error('Production order must be finalized to create production receipt'));
-      }
+      // Copiar internalReference da delivery sheet
+      this.internalReference = deliverySheet.internalReference;
       
-      // Copiar internalReference da production order
-      this.internalReference = productionOrder.internalReference;
+      console.log('Copied internalReference from DeliverySheet:', this.internalReference);
       
     } catch (error) {
+      console.error('Error copying internalReference from DeliverySheet:', error);
       return next(error);
     }
   }

@@ -3,12 +3,11 @@ const mongoose = require('mongoose');
 
 // Validação para criação de delivery sheet
 const validateCreateDeliverySheet = [
-  body('internalReference')
+  body('productionSheetId')
     .notEmpty()
-    .withMessage('Production sheet internal reference is required')
-    .isString()
-    .withMessage('Production sheet internal reference must be a string')
-    .trim(),
+    .withMessage('Production sheet ID is required')
+    .isMongoId()
+    .withMessage('Production sheet ID must be a valid MongoDB ObjectId'),
 
   body('deliveryDate')
     .optional()

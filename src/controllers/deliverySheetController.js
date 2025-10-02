@@ -202,7 +202,19 @@ class DeliverySheetController {
     try {
       const { id } = req.params;
 
-      const deliverySheet = await DeliverySheet.findById(id)
+      // Verificar se é ObjectId válido ou internalReference
+      const mongoose = require('mongoose');
+      let query;
+      
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        // Se for ObjectId válido, buscar por _id
+        query = { _id: id };
+      } else {
+        // Se não for ObjectId, buscar por internalReference
+        query = { internalReference: id.toUpperCase() };
+      }
+
+      const deliverySheet = await DeliverySheet.findOne(query)
         .populate({
           path: 'productionSheetId',
           populate: {
@@ -250,16 +262,13 @@ class DeliverySheetController {
         });
       }
 
-      // Buscar production sheet pelo internalReference
-      const productionSheet = await ProductionSheet.findOne({ 
-        internalReference: req.body.internalReference,
-        active: true 
-      });
+      // Buscar production sheet pelo productionSheetId enviado pelo frontend
+      const productionSheet = await ProductionSheet.findById(req.body.productionSheetId);
       
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found with the provided internal reference'
+          message: 'Production sheet not found'
         });
       }
 

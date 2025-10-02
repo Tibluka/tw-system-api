@@ -5,16 +5,14 @@ const deliverySheetSchema = new mongoose.Schema({
   internalReference: {
     type: String,
     unique: true,
-    required: [true, 'Internal reference is required'],
     trim: true,
     uppercase: true,
     maxlength: [20, 'Internal reference must have maximum 20 characters']
   },
 
   // REFERÊNCIA À FICHA DE PRODUÇÃO (usando internalReference)
-  internalReference: {
+  productionSheetInternalReference: {
     type: String,
-    required: [true, 'Production sheet internal reference is required'],
     trim: true,
     uppercase: true
   },

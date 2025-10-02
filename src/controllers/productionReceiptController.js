@@ -321,28 +321,122 @@ class ProductionReceiptController {
       const sortField = ['internalReference', 'paymentStatus', 'paymentMethod', 'totalAmount', 'issueDate', 'dueDate', 'createdAt', 'updatedAt'].includes(sortBy) ? 
         sortBy : 'createdAt';
 
-      // Execute query with pagination
+      // Execute query with aggregation pipeline for clean nested structure
       const [productionReceipts, totalCount] = await Promise.all([
-        ProductionReceipt.find(query)
-          .sort({ [sortField]: sortOrderValue })
-          .skip(skip)
-          .limit(limitNum)
-          .populate({
-            path: 'deliverySheetId',
-            populate: {
-              path: 'productionSheetId',
-              populate: {
-                path: 'productionOrderId',
-                populate: {
-                  path: 'developmentId',
-                  populate: {
-                    path: 'clientId'
+        ProductionReceipt.aggregate([
+          { $match: query },
+          {
+            $lookup: {
+              from: 'deliverysheets',
+              localField: 'deliverySheetId',
+              foreignField: '_id',
+              as: 'deliverySheet'
+            }
+          },
+          { $unwind: '$deliverySheet' },
+          {
+            $lookup: {
+              from: 'productionsheets',
+              localField: 'deliverySheet.productionSheetId',
+              foreignField: '_id',
+              as: 'productionSheet'
+            }
+          },
+          { $unwind: '$productionSheet' },
+          {
+            $lookup: {
+              from: 'productionorders',
+              localField: 'productionSheet.productionOrderId',
+              foreignField: '_id',
+              as: 'productionOrder'
+            }
+          },
+          { $unwind: '$productionOrder' },
+          {
+            $lookup: {
+              from: 'developments',
+              localField: 'productionOrder.developmentId',
+              foreignField: '_id',
+              as: 'development'
+            }
+          },
+          { $unwind: '$development' },
+          {
+            $lookup: {
+              from: 'clients',
+              localField: 'development.clientId',
+              foreignField: '_id',
+              as: 'client'
+            }
+          },
+          { $unwind: '$client' },
+          {
+            $project: {
+              _id: 1,
+              internalReference: 1,
+              paymentMethod: 1,
+              paymentStatus: 1,
+              totalAmount: 1,
+              paidAmount: 1,
+              remainingAmount: 1,
+              dueDate: 1,
+              paymentDate: 1,
+              issueDate: 1,
+              notes: 1,
+              active: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              deliverySheet: {
+                _id: '$deliverySheet._id',
+                internalReference: '$deliverySheet.internalReference',
+                deliveryDate: '$deliverySheet.deliveryDate',
+                totalValue: '$deliverySheet.totalValue',
+                notes: '$deliverySheet.notes',
+                invoiceNumber: '$deliverySheet.invoiceNumber',
+                address: '$deliverySheet.address',
+                status: '$deliverySheet.status',
+                productionSheet: {
+                  _id: '$productionSheet._id',
+                  internalReference: '$productionSheet.internalReference',
+                  entryDate: '$productionSheet.entryDate',
+                  expectedExitDate: '$productionSheet.expectedExitDate',
+                  machine: '$productionSheet.machine',
+                  stage: '$productionSheet.stage',
+                  temperature: '$productionSheet.temperature',
+                  velocity: '$productionSheet.velocity',
+                  productionOrder: {
+                    _id: '$productionOrder._id',
+                    internalReference: '$productionOrder.internalReference',
+                    fabricType: '$productionOrder.fabricType',
+                    observations: '$productionOrder.observations',
+                    hasCraft: '$productionOrder.hasCraft',
+                    fabricWidth: '$productionOrder.fabricWidth',
+                    development: {
+                      _id: '$development._id',
+                      internalReference: '$development.internalReference',
+                      clientReference: '$development.clientReference',
+                      pieceImage: '$development.pieceImage',
+                      productionType: '$development.productionType',
+                      status: '$development.status',
+                      client: {
+                        _id: '$client._id',
+                        acronym: '$client.acronym',
+                        companyName: '$client.companyName',
+                        cnpj: '$client.cnpj',
+                        contact: '$client.contact',
+                        address: '$client.address',
+                        values: '$client.values'
+                      }
+                    }
                   }
                 }
               }
             }
-          })
-          .lean(),
+          },
+          { $sort: { [sortField]: sortOrderValue } },
+          { $skip: skip },
+          { $limit: limitNum }
+        ]),
         ProductionReceipt.countDocuments(query)
       ]);
 
@@ -542,7 +636,8 @@ class ProductionReceiptController {
       // Verificar se já existe um production receipt para esta delivery sheet
       const existingReceipt = await ProductionReceipt.findOne({
         deliverySheetId: req.body.deliverySheetId,
-        active: true
+        active: true,
+        deliverySheetId: { $ne: null }
       });
 
       if (existingReceipt) {
@@ -552,9 +647,17 @@ class ProductionReceiptController {
         });
       }
 
+      // Remover internalReference do payload para deixar o pre-save hook gerar
+      const { internalReference, ...receiptData } = req.body;
+      
+      console.log('req.body:', req.body);
+      console.log('receiptData:', receiptData);
+      
       // Criar o production receipt
-      const productionReceipt = new ProductionReceipt(req.body);
+      const productionReceipt = new ProductionReceipt(receiptData);
+      console.log('productionReceipt before save:', productionReceipt);
       await productionReceipt.save();
+      console.log('productionReceipt after save:', productionReceipt);
 
       res.status(201).json({
         success: true,

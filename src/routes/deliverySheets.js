@@ -15,8 +15,8 @@ router.use(authenticate);
 // GET /delivery-sheets - List all delivery sheets
 router.get('/', deliverySheetController.index);
 
-// GET /delivery-sheets/:id - Get single delivery sheet
-router.get('/:id', validateObjectId, deliverySheetController.show);
+// GET /delivery-sheets/:id - Get single delivery sheet (accepts both ObjectId and internalReference)
+router.get('/:id', deliverySheetController.show);
 
 // POST /delivery-sheets - Create new delivery sheet
 router.post('/', validateCreateDeliverySheet, deliverySheetController.store);
