@@ -25,7 +25,7 @@ router.post('/', validateCreateDeliverySheet, deliverySheetController.store);
 router.put('/:id', validateObjectId, validateUpdateDeliverySheet, deliverySheetController.update);
 
 // PUT /delivery-sheets/:id/status - Update delivery status
-router.put('/:id/status', validateObjectId, validateStatusUpdateDeliverySheet, deliverySheetController.updateStatus);
+router.patch('/:id/status', validateObjectId, validateStatusUpdateDeliverySheet, deliverySheetController.updateStatus);
 
 // DELETE /delivery-sheets/:id - Soft delete delivery sheet
 router.delete('/:id', validateObjectId, deliverySheetController.destroy);
