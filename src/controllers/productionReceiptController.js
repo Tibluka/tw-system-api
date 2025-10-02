@@ -650,14 +650,9 @@ class ProductionReceiptController {
       // Remover internalReference do payload para deixar o pre-save hook gerar
       const { internalReference, ...receiptData } = req.body;
       
-      console.log('req.body:', req.body);
-      console.log('receiptData:', receiptData);
-      
       // Criar o production receipt
       const productionReceipt = new ProductionReceipt(receiptData);
-      console.log('productionReceipt before save:', productionReceipt);
       await productionReceipt.save();
-      console.log('productionReceipt after save:', productionReceipt);
 
       res.status(201).json({
         success: true,

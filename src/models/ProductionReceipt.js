@@ -136,11 +136,6 @@ productionReceiptSchema.pre(/^find/, function() {
 
 // Copy internalReference from DeliverySheet before saving
 productionReceiptSchema.pre('save', async function(next) {
-  console.log('ProductionReceipt pre-save hook triggered');
-  console.log('isNew:', this.isNew);
-  console.log('deliverySheetId:', this.deliverySheetId);
-  console.log('internalReference:', this.internalReference);
-  
   if (this.isNew && this.deliverySheetId && !this.internalReference) {
     try {
       const DeliverySheet = mongoose.model('DeliverySheet');
@@ -153,10 +148,7 @@ productionReceiptSchema.pre('save', async function(next) {
       // Copiar internalReference da delivery sheet
       this.internalReference = deliverySheet.internalReference;
       
-      console.log('Copied internalReference from DeliverySheet:', this.internalReference);
-      
     } catch (error) {
-      console.error('Error copying internalReference from DeliverySheet:', error);
       return next(error);
     }
   }
