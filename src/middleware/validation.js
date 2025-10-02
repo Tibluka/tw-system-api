@@ -43,5 +43,10 @@ module.exports = {
   validateCreateProductionReceipt: validations.validateCreateProductionReceipt,
   validateUpdateProductionReceipt: validations.validateUpdateProductionReceipt,
   validatePaymentStatusUpdateProductionReceipt: validations.validatePaymentStatusUpdateProductionReceipt,
-  validateProcessPayment: validations.validateProcessPayment
+  validateProcessPayment: validations.validateProcessPayment,
+
+  // Delivery Sheet validations
+  validateCreateDeliverySheet: validations.validateCreateDeliverySheet,
+  validateUpdateDeliverySheet: validations.validateUpdateDeliverySheet,
+  validateStatusUpdateDeliverySheet: validations.validateStatusUpdateDeliverySheet
 };

@@ -2,11 +2,11 @@ const { body } = require('express-validator');
 
 // Validações para criação de production receipt
 const validateCreateProductionReceipt = [
-  body('productionOrderId')
+  body('deliverySheetId')
     .notEmpty()
-    .withMessage('Production order ID is required')
+    .withMessage('Delivery sheet ID is required')
     .isMongoId()
-    .withMessage('Production order ID must be a valid MongoDB ObjectId'),
+    .withMessage('Delivery sheet ID must be a valid MongoDB ObjectId'),
 
   body('paymentMethod')
     .notEmpty()

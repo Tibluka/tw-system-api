@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const productionReceiptSchema = new mongoose.Schema({
-  // PRODUCTION ORDER REFERENCE (virtual populate para dados completos)
-  productionOrderId: {
+  // DELIVERY SHEET REFERENCE (virtual populate para dados completos)
+  deliverySheetId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ProductionOrder',
-    required: [true, 'Production order is required']
+    ref: 'DeliverySheet',
+    required: [true, 'Delivery sheet is required']
   },
 
   // DADOS COPIADOS (para não depender de populate)

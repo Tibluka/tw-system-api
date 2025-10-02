@@ -6,6 +6,7 @@ const clientRoutes = require('./clients');
 const developmentRoutes = require('./developments');
 const productionOrders = require('./productionOrders');
 const productionSheets = require('./productionSheets');
+const deliverySheets = require('./deliverySheets');
 const productionReceipts = require('./productionReceipts');
 
 const router = express.Router();
@@ -22,10 +23,11 @@ router.get('/', (req, res) => {
       auth: '/auth',
       users: '/users',
       clients: '/clients',
-      clients: '/developments',
-      clients: '/production-orders',
-      clients: '/production-sheets',
-      clients: '/production-receipts'
+      developments: '/developments',
+      'production-orders': '/production-orders',
+      'production-sheets': '/production-sheets',
+      'delivery-sheets': '/delivery-sheets',
+      'production-receipts': '/production-receipts'
     }
   });
 });
@@ -38,6 +40,7 @@ router.use('/clients', clientRoutes);
 router.use('/developments', developmentRoutes);
 router.use('/production-orders', productionOrders);
 router.use('/production-sheets', productionSheets);
+router.use('/delivery-sheets', deliverySheets);
 router.use('/production-receipts', productionReceipts);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 // controllers/productionReceiptController.js
 
 const ProductionReceipt = require('../models/ProductionReceipt');
-const ProductionOrder = require('../models/ProductionOrder');
+const DeliverySheet = require('../models/DeliverySheet');
 const { validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
@@ -59,11 +59,15 @@ class ProductionReceiptController {
       }
 
       // ✅ CORRIGIDO: Usar os nomes corretos das coleções do MongoDB
-      const productionOrderCollection = ProductionOrder.collection.name;
+      const deliverySheetCollection = DeliverySheet.collection.name;
+      const productionSheetCollection = mongoose.model('ProductionSheet').collection.name;
+      const productionOrderCollection = mongoose.model('ProductionOrder').collection.name;
       const developmentCollection = mongoose.model('Development').collection.name;
       const clientCollection = mongoose.model('Client').collection.name;
 
       console.log('Collection names:', {
+        deliverySheets: deliverySheetCollection,
+        productionSheets: productionSheetCollection,
         productionOrders: productionOrderCollection,
         developments: developmentCollection,
         clients: clientCollection
@@ -71,11 +75,33 @@ class ProductionReceiptController {
 
       // ✅ CORRIGIDO: Pipeline de agregação mais robusto
       const pipeline = [
+        // Join com DeliverySheet
+        {
+          $lookup: {
+            from: deliverySheetCollection,
+            localField: 'deliverySheetId',
+            foreignField: '_id',
+            as: 'deliverySheet'
+          }
+        },
+        { $unwind: '$deliverySheet' },
+        
+        // Join com ProductionSheet
+        {
+          $lookup: {
+            from: productionSheetCollection,
+            localField: 'deliverySheet.productionSheetId',
+            foreignField: '_id',
+            as: 'productionSheet'
+          }
+        },
+        { $unwind: '$productionSheet' },
+        
         // Join com ProductionOrder
         {
           $lookup: {
             from: productionOrderCollection,
-            localField: 'productionOrderId',
+            localField: 'productionSheet.productionOrderId',
             foreignField: '_id',
             as: 'productionOrder'
           }
@@ -258,17 +284,6 @@ class ProductionReceiptController {
       if (paymentMethod) {
         query.paymentMethod = paymentMethod;
       }
-      
-      // Filter by production order
-      if (productionOrderId) {
-        query.productionOrderId = productionOrderId;
-      }
-      
-      // Filter by overdue
-      if (overdue === 'true') {
-        query.paymentStatus = 'PENDING';
-        query.dueDate = { $lt: new Date() };
-      }
 
       // ✅ NOVO: Filtros por data de criação
       if (createdFrom || createdTo) {
@@ -312,7 +327,21 @@ class ProductionReceiptController {
           .sort({ [sortField]: sortOrderValue })
           .skip(skip)
           .limit(limitNum)
-          .populate('productionOrderId', 'internalReference developmentId fabricType')
+          .populate({
+            path: 'deliverySheetId',
+            populate: {
+              path: 'productionSheetId',
+              populate: {
+                path: 'productionOrderId',
+                populate: {
+                  path: 'developmentId',
+                  populate: {
+                    path: 'clientId'
+                  }
+                }
+              }
+            }
+          })
           .lean(),
         ProductionReceipt.countDocuments(query)
       ]);
@@ -480,33 +509,46 @@ class ProductionReceiptController {
         });
       }
 
-      // Verificar se a production order existe e está finalizada
-      const productionOrder = await ProductionOrder.findById(req.body.productionOrderId);
+      // Verificar se a delivery sheet existe e está entregue
+      const deliverySheet = await DeliverySheet.findById(req.body.deliverySheetId)
+        .populate({
+          path: 'productionSheetId',
+          populate: {
+            path: 'productionOrderId',
+            populate: {
+              path: 'developmentId',
+              populate: {
+                path: 'clientId'
+              }
+            }
+          }
+        });
       
-      if (!productionOrder) {
+      if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Delivery sheet not found'
         });
       }
 
-      if (productionOrder.status !== 'FINALIZED') {
+      if (deliverySheet.status !== 'DELIVERED') {
         return res.status(400).json({
           success: false,
-          message: 'Production order must be finalized to create production receipt'
+          message: 'Receipt can only be created for delivered items'
         });
       }
 
-      // Verificar se já existe um production receipt para esta production order
+
+      // Verificar se já existe um production receipt para esta delivery sheet
       const existingReceipt = await ProductionReceipt.findOne({
-        productionOrderId: req.body.productionOrderId,
+        deliverySheetId: req.body.deliverySheetId,
         active: true
       });
 
       if (existingReceipt) {
         return res.status(400).json({
           success: false,
-          message: 'Production receipt already exists for this production order'
+          message: 'Production receipt already exists for this delivery sheet'
         });
       }
 

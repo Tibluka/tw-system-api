@@ -5,6 +5,7 @@ const developmentValidation = require('./developmentValidation');
 const productionOrderValidation = require('./productionOrderValidation');
 const productionSheetValidation = require('./productionSheetValidation');
 const productionReceiptValidation = require('./productionReceiptValidation');
+const deliverySheetValidation = require('./deliverySheetValidation');
 const userValidation = require('./userValidation');
 
 // Exportar todas as validações organizadas por entidade
@@ -26,6 +27,9 @@ module.exports = {
   
   // Production Receipt validations
   ...productionReceiptValidation,
+  
+  // Delivery Sheet validations
+  ...deliverySheetValidation,
   
   // User validations
   ...userValidation
