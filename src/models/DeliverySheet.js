@@ -112,33 +112,11 @@ const deliverySheetSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// MIDDLEWARE PRE-SAVE PARA GERAR INTERNAL REFERENCE
-deliverySheetSchema.pre('save', async function(next) {
-  if (this.isNew && !this.internalReference) {
-    try {
-      // Buscar o último delivery sheet para gerar o próximo número
-      const lastDeliverySheet = await this.constructor.findOne({})
-        .sort({ internalReference: -1 });
-
-      let nextNumber = 1;
-      if (lastDeliverySheet && lastDeliverySheet.internalReference) {
-        // Extrair o número da última referência (formato: ENT250001)
-        const lastNumber = parseInt(lastDeliverySheet.internalReference.slice(-4));
-        if (!isNaN(lastNumber)) {
-          nextNumber = lastNumber + 1;
-        }
-      }
-
-      // Formato: ENT + ANO + CONTADOR (4 dígitos)
-      const currentYear = new Date().getFullYear().toString().slice(-2);
-      const sequentialFormatted = nextNumber.toString().padStart(4, '0');
-      this.internalReference = `ENT${currentYear}${sequentialFormatted}`;
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
-});
+// MIDDLEWARE PRE-SAVE PARA GERAR INTERNAL REFERENCE (DESABILITADO - USANDO CONTROLLER)
+// deliverySheetSchema.pre('save', async function(next) {
+//   // Lógica movida para o controller
+//   next();
+// });
 
 // ÍNDICES
 deliverySheetSchema.index({ internalReference: 1 });

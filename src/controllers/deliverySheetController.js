@@ -287,9 +287,17 @@ class DeliverySheetController {
 
       // Adicionar o productionSheetId ao payload
       req.body.productionSheetId = productionSheet._id;
+      
+      // Usar a internalReference do ProductionSheet
+      req.body.internalReference = productionSheet.internalReference;
+      
+      console.log('🔍 Controller - productionSheet.internalReference:', productionSheet.internalReference);
+      console.log('🔍 Controller - req.body.internalReference:', req.body.internalReference);
 
       const deliverySheet = new DeliverySheet(req.body);
+      console.log('🔍 Controller - deliverySheet.internalReference antes do save:', deliverySheet.internalReference);
       await deliverySheet.save();
+      console.log('🔍 Controller - deliverySheet.internalReference depois do save:', deliverySheet.internalReference);
 
       // Buscar novamente para incluir os dados populados
       const deliverySheetWithData = await DeliverySheet.findById(deliverySheet._id)
