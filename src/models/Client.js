@@ -21,13 +21,9 @@ const clientSchema = new mongoose.Schema(
       type: String,
       required: [true, 'CNPJ é obrigatório'],
       unique: true,
-      validate: {
-        validator: function (v) {
-          // Validação básica de CNPJ (apenas números e 14 dígitos)
-          return /^\d{14}$/.test(v.replace(/[^\d]/g, ''));
-        },
-        message: 'CNPJ deve conter 14 dígitos'
-      }
+      trim: true,
+      maxlength: [18, 'CNPJ deve ter no máximo 18 caracteres'],
+      minlength: [14, 'CNPJ deve ter no mínimo 14 caracteres']
     },
     contact: {
       responsibleName: {
