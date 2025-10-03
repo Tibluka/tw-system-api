@@ -142,6 +142,7 @@ class DeliverySheetController {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -194,6 +195,7 @@ class DeliverySheetController {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -278,6 +280,7 @@ class DeliverySheetController {
         return res.status(400).json({
           success: false,
           message: 'Validation error',
+          code: ERROR_CODES.VALIDATION_ERROR,
           errors: Object.values(error.errors).map(err => ({
             field: err.path,
             message: err.message
@@ -285,9 +288,18 @@ class DeliverySheetController {
         });
       }
 
+      if (error.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Internal reference already exists. Use another value.',
+          code: ERROR_CODES.DUPLICATE_ENTRY
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -348,6 +360,7 @@ class DeliverySheetController {
         return res.status(400).json({
           success: false,
           message: 'Validation error',
+          code: ERROR_CODES.VALIDATION_ERROR,
           errors: Object.values(error.errors).map(err => ({
             field: err.path,
             message: err.message
@@ -355,9 +368,18 @@ class DeliverySheetController {
         });
       }
 
+      if (error.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Internal reference already exists. Use another value.',
+          code: ERROR_CODES.DUPLICATE_ENTRY
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -390,6 +412,7 @@ class DeliverySheetController {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -421,6 +444,7 @@ class DeliverySheetController {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }

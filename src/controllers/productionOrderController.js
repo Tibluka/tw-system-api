@@ -91,6 +91,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar production orders',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -131,6 +132,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error fetching production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -210,6 +212,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error creating production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -297,6 +300,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error updating production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -353,6 +357,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error updating status',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -393,6 +398,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error deactivating production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -433,6 +439,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error reactivating production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -451,6 +458,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error fetching statistics',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
@@ -485,6 +493,7 @@ class ProductionOrderController {
       res.status(500).json({
         success: false,
         message: 'Error fetching production order',
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
     }
