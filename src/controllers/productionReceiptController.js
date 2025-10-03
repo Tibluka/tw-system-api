@@ -3,6 +3,7 @@
 const ProductionReceipt = require('../models/ProductionReceipt');
 const DeliverySheet = require('../models/DeliverySheet');
 const { validationResult } = require('express-validator');
+const { ERROR_CODES } = require('../constants/errorCodes');
 const mongoose = require('mongoose');
 
 class ProductionReceiptController {
@@ -627,6 +628,7 @@ class ProductionReceiptController {
         return res.status(400).json({
           success: false,
           message: 'Validation errors',
+          code: ERROR_CODES.VALIDATION_ERROR,
           errors: errors.array()
         });
       }
@@ -671,7 +673,8 @@ class ProductionReceiptController {
       if (existingReceipt) {
         return res.status(400).json({
           success: false,
-          message: 'Production receipt already exists for this delivery sheet'
+          message: 'Production receipt already exists for this delivery sheet',
+          code: ERROR_CODES.PRODUCTION_RECEIPT_ALREADY_EXISTS
         });
       }
 

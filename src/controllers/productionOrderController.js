@@ -1,6 +1,7 @@
 const ProductionOrder = require('../models/ProductionOrder');
 const Development = require('../models/Development');
 const { validationResult } = require('express-validator');
+const { ERROR_CODES } = require('../constants/errorCodes');
 
 class ProductionOrderController {
   // GET /production-orders - List all production orders
@@ -117,7 +118,8 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Production order not found',
+          code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
@@ -143,6 +145,7 @@ class ProductionOrderController {
         return res.status(400).json({
           success: false,
           message: 'Invalid data',
+          code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
       }
@@ -152,14 +155,16 @@ class ProductionOrderController {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Development not found',
+          code: ERROR_CODES.DEVELOPMENT_NOT_FOUND
         });
       }
 
       if (development.status !== 'APPROVED') {
         return res.status(400).json({
           success: false,
-          message: 'Development must be approved to create production order'
+          message: 'Development must be approved to create production order',
+          code: ERROR_CODES.DEVELOPMENT_NOT_APPROVED
         });
       }
 
@@ -172,7 +177,8 @@ class ProductionOrderController {
       if (existingProductionOrder) {
         return res.status(409).json({
           success: false,
-          message: 'Production order already exists for this development'
+          message: 'Production order already exists for this development',
+          code: ERROR_CODES.PRODUCTION_ORDER_ALREADY_EXISTS
         });
       }
 
@@ -220,6 +226,7 @@ class ProductionOrderController {
         return res.status(400).json({
           success: false,
           message: 'Invalid data',
+          code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
       }
@@ -230,14 +237,16 @@ class ProductionOrderController {
         if (!development) {
           return res.status(404).json({
             success: false,
-            message: 'Development not found'
+            message: 'Development not found',
+          code: ERROR_CODES.DEVELOPMENT_NOT_FOUND
           });
         }
 
         if (development.status !== 'APPROVED') {
           return res.status(400).json({
             success: false,
-            message: 'Development must be approved'
+            message: 'Development must be approved',
+            code: ERROR_CODES.DEVELOPMENT_NOT_APPROVED
           });
         }
       }
@@ -254,7 +263,8 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Production order not found',
+          code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
@@ -322,7 +332,8 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Production order not found',
+          code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
@@ -361,7 +372,8 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Production order not found',
+          code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
@@ -400,7 +412,8 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Production order not found',
+          code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 

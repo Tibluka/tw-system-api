@@ -1,6 +1,7 @@
 const DeliverySheet = require('../models/DeliverySheet');
 const ProductionSheet = require('../models/ProductionSheet');
 const { validationResult } = require('express-validator');
+const { ERROR_CODES } = require('../constants/errorCodes');
 
 class DeliverySheetController {
   constructor() {
@@ -207,6 +208,7 @@ class DeliverySheetController {
         return res.status(400).json({
           success: false,
           message: 'Invalid data',
+          code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
       }
@@ -230,7 +232,8 @@ class DeliverySheetController {
       if (existingDeliverySheet) {
         return res.status(409).json({
           success: false,
-          message: 'Delivery sheet already exists for this production sheet'
+          message: 'Delivery sheet already exists for this production sheet',
+          code: ERROR_CODES.DELIVERY_SHEET_ALREADY_EXISTS
         });
       }
 
@@ -301,6 +304,7 @@ class DeliverySheetController {
         return res.status(400).json({
           success: false,
           message: 'Invalid data',
+          code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
       }

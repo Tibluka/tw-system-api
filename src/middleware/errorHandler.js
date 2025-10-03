@@ -1,13 +1,15 @@
 const logger = require('../utils/logger');
 const config = require('../config/env');
+const { getErrorCode } = require('../constants/errorCodes');
 
 // Classe personalizada para erros da API
 class AppError extends Error {
-  constructor(message, statusCode, isOperational = true) {
+  constructor(message, statusCode, isOperational = true, code = null) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.code = code || getErrorCode(message);
 
     Error.captureStackTrace(this, this.constructor);
   }
@@ -16,27 +18,27 @@ class AppError extends Error {
 // Tratar erros do Mongoose
 const handleCastErrorDB = (err) => {
   const message = `ID inválido: ${err.value}`;
-  return new AppError(message, 400);
+  return new AppError(message, 400, true, getErrorCode('Invalid ObjectId'));
 };
 
 const handleDuplicateFieldsDB = (err) => {
   const value = err.errmsg ? err.errmsg.match(/(["'])(\\?.)*?\1/)[0] : 'campo duplicado';
   const message = `${value} já existe. Use outro valor.`;
-  return new AppError(message, 400);
+  return new AppError(message, 400, true, getErrorCode('Duplicate entry'));
 };
 
 const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map(el => el.message);
   const message = `Dados inválidos: ${errors.join('. ')}`;
-  return new AppError(message, 400);
+  return new AppError(message, 400, true, getErrorCode('Validation error'));
 };
 
 // Tratar erros JWT
 const handleJWTError = () =>
-  new AppError('Token inválido. Faça login novamente.', 401);
+  new AppError('Token inválido. Faça login novamente.', 401, true, getErrorCode('Invalid token'));
 
 const handleJWTExpiredError = () =>
-  new AppError('Token expirado. Faça login novamente.', 401);
+  new AppError('Token expirado. Faça login novamente.', 401, true, getErrorCode('Token expired'));
 
 // Enviar erro em desenvolvimento
 const sendErrorDev = (err, res) => {
@@ -44,6 +46,7 @@ const sendErrorDev = (err, res) => {
     success: false,
     error: err,
     message: err.message,
+    code: err.code || getErrorCode(err.message),
     stack: err.stack
   });
 };
@@ -54,7 +57,8 @@ const sendErrorProd = (err, res) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       success: false,
-      message: err.message
+      message: err.message,
+      code: err.code || getErrorCode(err.message)
     });
   } else {
     // Erros de programação: não vazar detalhes
@@ -62,7 +66,8 @@ const sendErrorProd = (err, res) => {
 
     res.status(500).json({
       success: false,
-      message: 'Algo deu errado!'
+      message: 'Algo deu errado!',
+      code: getErrorCode('Internal server error')
     });
   }
 };
@@ -71,6 +76,11 @@ const sendErrorProd = (err, res) => {
 const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+  
+  // Garantir que todos os erros tenham um código
+  if (!err.code) {
+    err.code = getErrorCode(err.message);
+  }
 
   // Log do erro
   if (err.statusCode >= 500) {
