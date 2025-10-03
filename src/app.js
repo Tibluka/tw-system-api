@@ -25,15 +25,19 @@ app.use(compression());
 // CORS
 app.use(cors(corsConfig));
 
-// Rate limiting
+// Rate limiting - mais permissivo para desenvolvimento
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests por IP por janela
+  max: 1000, // máximo 1000 requests por IP por janela (aumentado de 100)
   message: {
     error: 'Muitas tentativas. Tente novamente em 15 minutos.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Desabilitar rate limiting em desenvolvimento
+  skip: (req) => {
+    return process.env.NODE_ENV === 'development';
+  }
 });
 app.use('/api', limiter);
 
