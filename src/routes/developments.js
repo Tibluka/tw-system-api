@@ -39,7 +39,13 @@ router.use((req, res, next) => {
 router.use(developmentLimiter);
 
 // Apply resource access check to all routes - DEFAULT and ADMIN can access
-router.use(checkResourceAccess('developments'));
+// Mas pular para rotas de imagem que não precisam de autenticação
+router.use((req, res, next) => {
+  if (req.path.includes('/image')) {
+    return next();
+  }
+  checkResourceAccess('developments')(req, res, next);
+});
 
 // @route   GET /api/v1/developments
 // @desc    Get all developments with pagination and filters

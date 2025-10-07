@@ -32,6 +32,16 @@ const ENDPOINT_PERMISSIONS = {
 
 // Middleware para verificar permissões de endpoint
 const checkEndpointPermission = (req, res, next) => {
+  // Verificação de segurança para req.user
+  if (!req.user) {
+    return next(new AppError(
+      'Usuário não autenticado.', 
+      401,
+      true,
+      ERROR_CODES.AUTHENTICATION_REQUIRED
+    ));
+  }
+
   const userRole = req.user.role;
   const basePath = req.baseUrl + req.route.path;
 
@@ -61,6 +71,16 @@ const checkEndpointPermission = (req, res, next) => {
 
 // Middleware específico para perfil PRINTING - restrições em production-sheets
 const checkPrintingRestrictions = async (req, res, next) => {
+  // Verificação de segurança para req.user
+  if (!req.user) {
+    return next(new AppError(
+      'Usuário não autenticado.', 
+      401,
+      true,
+      ERROR_CODES.AUTHENTICATION_REQUIRED
+    ));
+  }
+
   if (req.user.role !== 'PRINTING') {
     return next();
   }
@@ -182,6 +202,16 @@ const checkPrintingRestrictions = async (req, res, next) => {
 // Middleware para verificar se usuário pode acessar recursos específicos
 const checkResourceAccess = (resourceType) => {
   return (req, res, next) => {
+    // Verificação de segurança para req.user
+    if (!req.user) {
+      return next(new AppError(
+        'Usuário não autenticado.', 
+        401,
+        true,
+        ERROR_CODES.AUTHENTICATION_REQUIRED
+      ));
+    }
+
     const userRole = req.user.role;
 
     // ADMIN tem acesso total
@@ -243,6 +273,16 @@ const checkResourceAccess = (resourceType) => {
 // Middleware para verificar permissões de criação/edição
 const checkCreatePermission = (resourceType) => {
   return (req, res, next) => {
+    // Verificação de segurança para req.user
+    if (!req.user) {
+      return next(new AppError(
+        'Usuário não autenticado.', 
+        401,
+        true,
+        ERROR_CODES.AUTHENTICATION_REQUIRED
+      ));
+    }
+
     const userRole = req.user.role;
 
     // ADMIN pode criar qualquer coisa
