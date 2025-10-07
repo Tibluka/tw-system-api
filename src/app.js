@@ -28,7 +28,7 @@ app.use(cors(corsConfig));
 // Rate limiting - mais permissivo para desenvolvimento
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000, // máximo 1000 requests por IP por janela (aumentado de 100)
+  max: 10000, // máximo 1000 requests por IP por janela (aumentado de 100)
   message: {
     error: 'Muitas tentativas. Tente novamente em 15 minutos.'
   },
