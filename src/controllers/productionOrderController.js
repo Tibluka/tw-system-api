@@ -47,11 +47,43 @@ class ProductionOrderController {
       // Text search
       if (search) {
         const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
+        
+        // Buscar developments que correspondem ao termo de busca
+        const Development = require('../models/Development');
+        const Client = require('../models/Client');
+        
+        // Primeiro, buscar clientes que correspondem ao termo de busca
+        const matchingClients = await Client.find({
+          $or: [
+            { companyName: { $regex: searchRegex, $options: 'i' } },
+            { acronym: { $regex: searchRegex, $options: 'i' } }
+          ]
+        }).select('_id');
+        
+        const clientIds = matchingClients.map(client => client._id);
+        
+        // Depois, buscar developments que correspondem ao termo OU que referenciam os clientes encontrados
+        const matchingDevelopments = await Development.find({
+          $or: [
+            { description: { $regex: searchRegex, $options: 'i' } },
+            { clientReference: { $regex: searchRegex, $options: 'i' } },
+            ...(clientIds.length > 0 ? [{ clientId: { $in: clientIds } }] : [])
+          ]
+        }).select('_id');
+        
+        const developmentIds = matchingDevelopments.map(dev => dev._id);
+        
         query.$or = [
           { internalReference: { $regex: searchRegex, $options: 'i' } },
-          { fabricType: { $regex: searchRegex, $options: 'i' } },
-          { observations: { $regex: searchRegex, $options: 'i' } }
+          { observations: { $regex: searchRegex, $options: 'i' } },
+          { 'productionType.type': { $regex: searchRegex, $options: 'i' } },
+          { 'productionType.fabricType': { $regex: searchRegex, $options: 'i' } }
         ];
+        
+        // Se encontrou developments correspondentes, incluir na busca
+        if (developmentIds.length > 0) {
+          query.$or.push({ developmentId: { $in: developmentIds } });
+        }
       }
 
       // Configurar ordenação
@@ -63,8 +95,7 @@ class ProductionOrderController {
         ProductionOrder.find(query)
           .sort({ [sortField]: sortOrder })
           .skip(skip)
-          .limit(limitNum)
-          .lean({ virtuals: true }), // Para incluir virtuals no lean
+          .limit(limitNum),
         ProductionOrder.countDocuments(query)
       ]);
 

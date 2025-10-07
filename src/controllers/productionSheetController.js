@@ -76,11 +76,58 @@ class ProductionSheetController {
       let searchFilter = null;
       if (search) {
         const searchRegex = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-        searchFilter = {
+        
+        // Buscar production orders que correspondem ao termo de busca
+        const Development = require('../models/Development');
+        const Client = require('../models/Client');
+        
+        // Primeiro, buscar clientes que correspondem ao termo de busca
+        const matchingClients = await Client.find({
+          $or: [
+            { companyName: { $regex: searchRegex, $options: 'i' } },
+            { acronym: { $regex: searchRegex, $options: 'i' } }
+          ]
+        }).select('_id');
+        
+        const clientIds = matchingClients.map(client => client._id);
+        
+        // Depois, buscar developments que correspondem ao termo OU que referenciam os clientes encontrados
+        const matchingDevelopments = await Development.find({
+          $or: [
+            { description: { $regex: searchRegex, $options: 'i' } },
+            { clientReference: { $regex: searchRegex, $options: 'i' } },
+            ...(clientIds.length > 0 ? [{ clientId: { $in: clientIds } }] : [])
+          ]
+        }).select('_id');
+        
+        const developmentIds = matchingDevelopments.map(dev => dev._id);
+        
+        // Buscar production orders que correspondem ao termo OU que referenciam os developments encontrados
+        const matchingProductionOrders = await ProductionOrder.find({
           $or: [
             { internalReference: { $regex: searchRegex, $options: 'i' } },
-            { productionNotes: { $regex: searchRegex, $options: 'i' } }
+            { observations: { $regex: searchRegex, $options: 'i' } },
+            { 'productionType.type': { $regex: searchRegex, $options: 'i' } },
+            { 'productionType.fabricType': { $regex: searchRegex, $options: 'i' } },
+            ...(developmentIds.length > 0 ? [{ developmentId: { $in: developmentIds } }] : [])
           ]
+        }).select('_id');
+        
+        const productionOrderIds = matchingProductionOrders.map(po => po._id);
+        
+        // Construir o filtro de busca
+        const searchConditions = [
+          { internalReference: { $regex: searchRegex, $options: 'i' } },
+          { productionNotes: { $regex: searchRegex, $options: 'i' } }
+        ];
+        
+        // Adicionar production orders encontrados se houver
+        if (productionOrderIds.length > 0) {
+          searchConditions.push({ productionOrderId: { $in: productionOrderIds } });
+        }
+        
+        searchFilter = {
+          $or: searchConditions
         };
       }
       
