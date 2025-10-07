@@ -70,7 +70,7 @@ const checkPrintingRestrictions = async (req, res, next) => {
 
   if (isUpdate && req.params.id) {
     try {
-      // Buscar a ficha de produção
+      // Buscar a ficha de produção atual
       const ProductionSheet = require('../models/ProductionSheet');
       const productionSheet = await ProductionSheet.findById(req.params.id);
       
@@ -94,19 +94,83 @@ const checkPrintingRestrictions = async (req, res, next) => {
         ));
       }
 
-      // Verificar quais campos podem ser alterados
-      const allowedFields = ['stage', 'machine'];
-      const updateFields = Object.keys(req.body);
-      const forbiddenFields = updateFields.filter(field => !allowedFields.includes(field));
+      // Função para comparar valores considerando tipos de data
+      const isValueChanged = (currentValue, newValue) => {
+        // Se ambos são datas ou strings de data, comparar como datas
+        if (isDateField(currentValue) || isDateField(newValue)) {
+          const currentDate = parseToDate(currentValue);
+          const newDate = parseToDate(newValue);
+          
+          if (currentDate && newDate) {
+            return currentDate.getTime() !== newDate.getTime();
+          }
+        }
+        
+        // Para outros tipos, usar comparação JSON
+        return JSON.stringify(currentValue) !== JSON.stringify(newValue);
+      };
 
-      if (forbiddenFields.length > 0) {
+      // Função auxiliar para verificar se é um campo de data
+      const isDateField = (value) => {
+        return value instanceof Date || 
+               (typeof value === 'string' && (value.includes('T') || value.match(/^\d{4}-\d{2}-\d{2}/)));
+      };
+
+      // Função auxiliar para converter para Date
+      const parseToDate = (value) => {
+        if (value instanceof Date) {
+          return value;
+        }
+        if (typeof value === 'string') {
+          const date = new Date(value);
+          return isNaN(date.getTime()) ? null : date;
+        }
+        return null;
+      };
+
+      // Verificar quais campos realmente mudaram e filtrar req.body
+      const allowedFields = ['stage', 'machine'];
+      const changedFields = [];
+      const forbiddenChangedFields = [];
+      const filteredBody = {};
+
+      // Comparar cada campo do payload com o valor atual
+      for (const [field, newValue] of Object.entries(req.body)) {
+        const currentValue = productionSheet[field];
+        
+        // Verificar se o valor realmente mudou (considerando datas)
+        if (isValueChanged(currentValue, newValue)) {
+          changedFields.push(field);
+          
+          // Verificar se o campo alterado é permitido para o perfil PRINTING
+          if (!allowedFields.includes(field)) {
+            forbiddenChangedFields.push(field);
+          } else {
+            // Adicionar apenas campos permitidos que mudaram ao filteredBody
+            filteredBody[field] = newValue;
+          }
+        }
+      }
+
+      // Se há campos proibidos sendo alterados, bloquear
+      if (forbiddenChangedFields.length > 0) {
         return next(new AppError(
-          `Perfil PRINTING só pode alterar os campos: ${allowedFields.join(', ')}. Campos não permitidos: ${forbiddenFields.join(', ')}`, 
+          `Perfil PRINTING só pode alterar os campos: ${allowedFields.join(', ')}. Campos não permitidos sendo alterados: ${forbiddenChangedFields.join(', ')}`, 
           403,
           true,
           ERROR_CODES.FIELD_UPDATE_RESTRICTION
         ));
       }
+
+      // Substituir req.body pelo filteredBody (apenas campos que mudaram e são permitidos)
+      req.body = filteredBody;
+
+      // Log para debug (opcional)
+      if (changedFields.length > 0) {
+        console.log(`Perfil PRINTING alterando campos: ${changedFields.join(', ')}`);
+        console.log(`Body filtrado:`, filteredBody);
+      }
+
     } catch (error) {
       return next(error);
     }
