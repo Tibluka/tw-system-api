@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { AppError } = require('../middleware/errorHandler');
+const { ERROR_CODES } = require('../constants/errorCodes');
 const logger = require('../utils/logger');
 const { generateStrongPassword } = require('../middleware/validation'); // Mudança aqui
 
@@ -69,7 +70,7 @@ const getUserById = async (req, res, next) => {
       .select('-password -passwordResetToken -emailVerificationToken');
 
     if (!user) {
-      return next(new AppError('Usuário não encontrado', 404));
+      return next(new AppError('Usuário não encontrado', 404, true, ERROR_CODES.USER_NOT_FOUND));
     }
 
     res.json({
@@ -82,7 +83,7 @@ const getUserById = async (req, res, next) => {
     logger.info(`Usuário ${userId} acessado por: ${req.user.email}`);
   } catch (error) {
     if (error.name === 'CastError') {
-      return next(new AppError('ID de usuário inválido', 400));
+      return next(new AppError('ID de usuário inválido', 400, true, ERROR_CODES.INVALID_OBJECT_ID));
     }
     next(error);
   }
@@ -98,7 +99,7 @@ const createUser = async (req, res, next) => {
     // Verificar se o usuário já existe
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      return next(new AppError('Email já está em uso', 400));
+      return next(new AppError('Email já está em uso', 400, true, ERROR_CODES.DUPLICATE_ENTRY));
     }
 
     const password = generateStrongPassword();
@@ -152,7 +153,7 @@ const updateUser = async (req, res, next) => {
       });
       
       if (existingUser) {
-        return next(new AppError('Email já está em uso por outro usuário', 400));
+        return next(new AppError('Email já está em uso por outro usuário', 400, true, ERROR_CODES.DUPLICATE_ENTRY));
       }
     }
 
@@ -166,7 +167,7 @@ const updateUser = async (req, res, next) => {
     ).select('-password -passwordResetToken -emailVerificationToken');
 
     if (!user) {
-      return next(new AppError('Usuário não encontrado', 404));
+      return next(new AppError('Usuário não encontrado', 404, true, ERROR_CODES.USER_NOT_FOUND));
     }
 
     res.json({
@@ -180,7 +181,7 @@ const updateUser = async (req, res, next) => {
     logger.info(`Usuário ${userId} atualizado por: ${req.user.email}`);
   } catch (error) {
     if (error.name === 'CastError') {
-      return next(new AppError('ID de usuário inválido', 400));
+      return next(new AppError('ID de usuário inválido', 400, true, ERROR_CODES.INVALID_OBJECT_ID));
     }
     next(error);
   }
@@ -201,7 +202,7 @@ const deleteUser = async (req, res, next) => {
     const user = await User.findById(userId);
     
     if (!user) {
-      return next(new AppError('Usuário não encontrado', 404));
+      return next(new AppError('Usuário não encontrado', 404, true, ERROR_CODES.USER_NOT_FOUND));
     }
 
     // Soft delete - apenas desativar a conta
@@ -219,7 +220,7 @@ const deleteUser = async (req, res, next) => {
     logger.info(`Usuário ${userId} (${user.email}) deletado por admin: ${req.user.email}`);
   } catch (error) {
     if (error.name === 'CastError') {
-      return next(new AppError('ID de usuário inválido', 400));
+      return next(new AppError('ID de usuário inválido', 400, true, ERROR_CODES.INVALID_OBJECT_ID));
     }
     next(error);
   }
@@ -242,7 +243,7 @@ const reactivateUser = async (req, res, next) => {
     ).select('-password -passwordResetToken -emailVerificationToken');
 
     if (!user) {
-      return next(new AppError('Usuário não encontrado', 404));
+      return next(new AppError('Usuário não encontrado', 404, true, ERROR_CODES.USER_NOT_FOUND));
     }
 
     res.json({
@@ -256,7 +257,7 @@ const reactivateUser = async (req, res, next) => {
     logger.info(`Usuário ${userId} reativado por admin: ${req.user.email}`);
   } catch (error) {
     if (error.name === 'CastError') {
-      return next(new AppError('ID de usuário inválido', 400));
+      return next(new AppError('ID de usuário inválido', 400, true, ERROR_CODES.INVALID_OBJECT_ID));
     }
     next(error);
   }
@@ -276,7 +277,7 @@ const changeUserPassword = async (req, res, next) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return next(new AppError('Usuário não encontrado', 404));
+      return next(new AppError('Usuário não encontrado', 404, true, ERROR_CODES.USER_NOT_FOUND));
     }
 
     // Atualizar senha (será hasheada automaticamente pelo middleware do modelo)
@@ -291,7 +292,7 @@ const changeUserPassword = async (req, res, next) => {
     logger.info(`Senha do usuário ${userId} alterada por admin: ${req.user.email}`);
   } catch (error) {
     if (error.name === 'CastError') {
-      return next(new AppError('ID de usuário inválido', 400));
+      return next(new AppError('ID de usuário inválido', 400, true, ERROR_CODES.INVALID_OBJECT_ID));
     }
     next(error);
   }
@@ -319,8 +320,14 @@ const getUserStats = async (req, res, next) => {
           adminUsers: {
             $sum: { $cond: [{ $eq: ['$role', 'ADMIN'] }, 1, 0] }
           },
-          regularUsers: {
-            $sum: { $cond: [{ $eq: ['$role', 'user'] }, 1, 0] }
+          defaultUsers: {
+            $sum: { $cond: [{ $eq: ['$role', 'DEFAULT'] }, 1, 0] }
+          },
+          printingUsers: {
+            $sum: { $cond: [{ $eq: ['$role', 'PRINTING'] }, 1, 0] }
+          },
+          financingUsers: {
+            $sum: { $cond: [{ $eq: ['$role', 'FINANCING'] }, 1, 0] }
           }
         }
       }

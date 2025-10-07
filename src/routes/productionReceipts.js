@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const productionReceiptController = require('../controllers/productionReceiptController');
 const { authenticate } = require('../middleware/auth');
+const { checkResourceAccess, checkCreatePermission } = require('../middleware/permissions');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 const {
   validateCreateProductionReceipt,
@@ -29,6 +30,9 @@ router.use(authenticate);
 
 // Apply rate limiting to all routes
 router.use(productionReceiptLimiter);
+
+// Apply resource access check to all routes - only FINANCING can access
+router.use(checkResourceAccess('production-receipts'));
 
 // @route   GET /api/v1/production-receipts
 // @desc    Get all production receipts with pagination and filters
@@ -71,6 +75,7 @@ router.get('/:id',
 // @desc    Create new production receipt
 // @access  Private
 router.post('/', 
+  checkCreatePermission('production-receipts'),
   validateCreateProductionReceipt,
   productionReceiptController.store
 );

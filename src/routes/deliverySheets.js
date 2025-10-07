@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const deliverySheetController = require('../controllers/deliverySheetController');
 const { authenticate } = require('../middleware/auth');
+const { checkResourceAccess, checkCreatePermission } = require('../middleware/permissions');
 const { 
   validateCreateDeliverySheet, 
   validateUpdateDeliverySheet, 
@@ -12,6 +13,9 @@ const {
 // Aplicar autenticação em todas as rotas
 router.use(authenticate);
 
+// Apply resource access check to all routes - DEFAULT and ADMIN can access
+router.use(checkResourceAccess('delivery-sheets'));
+
 // GET /delivery-sheets - List all delivery sheets
 router.get('/', deliverySheetController.index);
 
@@ -19,7 +23,7 @@ router.get('/', deliverySheetController.index);
 router.get('/:id', deliverySheetController.show);
 
 // POST /delivery-sheets - Create new delivery sheet
-router.post('/', validateCreateDeliverySheet, deliverySheetController.store);
+router.post('/', checkCreatePermission('delivery-sheets'), validateCreateDeliverySheet, deliverySheetController.store);
 
 // PUT /delivery-sheets/:id - Update delivery sheet
 router.put('/:id', validateObjectId, validateUpdateDeliverySheet, deliverySheetController.update);

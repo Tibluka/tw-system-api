@@ -2,10 +2,14 @@ const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
 const { validateCreateClient, validateUpdateClient } = require('../middleware/validation');
-const { authenticate, authorize } = require('../middleware/auth'); // Assumindo que existe middleware de auth
+const { authenticate, authorize } = require('../middleware/auth');
+const { checkResourceAccess, checkCreatePermission } = require('../middleware/permissions');
 
 // Aplicar autenticação em todas as rotas
 router.use(authenticate);
+
+// Apply resource access check to all routes - DEFAULT and FINANCING can access
+router.use(checkResourceAccess('clients'));
 
 // GET /api/v1/clients/stats - Estatísticas (deve vir antes de /:id)
 router.get('/stats', clientController.stats);
@@ -20,7 +24,7 @@ router.get('/', clientController.index);
 router.get('/:id', clientController.show);
 
 // POST /api/v1/clients - Criar novo cliente
-router.post('/', validateCreateClient, clientController.store);
+router.post('/', checkCreatePermission('clients'), validateCreateClient, clientController.store);
 
 // PUT /api/v1/clients/:id - Atualizar cliente
 router.put('/:id', validateUpdateClient, clientController.update);

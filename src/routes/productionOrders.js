@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const productionOrderController = require('../controllers/productionOrderController');
 const { authenticate } = require('../middleware/auth');
+const { checkResourceAccess, checkCreatePermission } = require('../middleware/permissions');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 const {
   validateCreateProductionOrder,
@@ -29,6 +30,9 @@ router.use(authenticate);
 
 // Apply rate limiting to all routes
 router.use(productionOrderLimiter);
+
+// Apply resource access check to all routes - DEFAULT and ADMIN can access
+router.use(checkResourceAccess('production-orders'));
 
 // @route   GET /api/v1/production-orders
 // @desc    Get all production orders with pagination and filters

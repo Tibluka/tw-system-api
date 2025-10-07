@@ -46,6 +46,12 @@ const ERROR_CODES = {
   ROLE_REQUIRED: 4002,
   ADMIN_REQUIRED: 4003,
   RESOURCE_ACCESS_DENIED: 4004,
+  PROFILE_ACCESS_DENIED: 4005,
+  PRINTING_RESTRICTION_VIOLATION: 4006,
+  PRODUCTION_ORDER_STATUS_RESTRICTION: 4007,
+  FIELD_UPDATE_RESTRICTION: 4008,
+  ENDPOINT_ACCESS_DENIED: 4009,
+  RESOURCE_CREATION_DENIED: 4010,
 
   // RECURSOS (5xxx)
   USER_NOT_FOUND: 5001,
@@ -116,6 +122,11 @@ const ERROR_MESSAGE_TO_CODE = {
   'Role required': ERROR_CODES.ROLE_REQUIRED,
   'Admin required': ERROR_CODES.ADMIN_REQUIRED,
   'Resource access denied': ERROR_CODES.RESOURCE_ACCESS_DENIED,
+  'Acesso negado. Seu perfil': ERROR_CODES.PROFILE_ACCESS_DENIED,
+  'Perfil PRINTING só pode alterar os campos': ERROR_CODES.FIELD_UPDATE_RESTRICTION,
+  'Você só pode alterar fichas de produção quando a ordem de produção estiver com status PILOT_PRODUCTION': ERROR_CODES.PRODUCTION_ORDER_STATUS_RESTRICTION,
+  'Acesso negado. Apenas perfis': ERROR_CODES.ENDPOINT_ACCESS_DENIED,
+  'Apenas administradores podem criar usuários': ERROR_CODES.RESOURCE_CREATION_DENIED,
 
   // Recursos
   'User not found': ERROR_CODES.USER_NOT_FOUND,
@@ -155,6 +166,27 @@ function getErrorCode(message) {
     }
   }
 
+  // Códigos padrão baseados em palavras-chave específicas para permissões
+  if (message.includes('Você só pode alterar fichas de produção quando a ordem de produção estiver com status PILOT_PRODUCTION')) {
+    return ERROR_CODES.PRODUCTION_ORDER_STATUS_RESTRICTION;
+  }
+  
+  if (message.includes('Perfil PRINTING só pode alterar os campos')) {
+    return ERROR_CODES.FIELD_UPDATE_RESTRICTION;
+  }
+  
+  if (message.includes('Acesso negado. Seu perfil')) {
+    return ERROR_CODES.PROFILE_ACCESS_DENIED;
+  }
+  
+  if (message.includes('Acesso negado. Apenas perfis')) {
+    return ERROR_CODES.ENDPOINT_ACCESS_DENIED;
+  }
+  
+  if (message.includes('Apenas administradores podem criar usuários')) {
+    return ERROR_CODES.RESOURCE_CREATION_DENIED;
+  }
+  
   // Códigos padrão baseados em palavras-chave
   if (message.includes('not found') || message.includes('not exist')) {
     return ERROR_CODES.RESOURCE_NOT_FOUND;

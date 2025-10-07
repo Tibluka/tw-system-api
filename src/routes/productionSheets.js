@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const productionSheetController = require('../controllers/productionSheetController');
 const { authenticate } = require('../middleware/auth');
+const { checkEndpointPermission, checkResourceAccess, checkCreatePermission, checkPrintingRestrictions } = require('../middleware/permissions');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 const {
   validateCreateProductionSheet,
@@ -29,6 +30,9 @@ router.use(authenticate);
 
 // Apply rate limiting to all routes
 router.use(productionSheetLimiter);
+
+// Apply resource access check to all routes
+router.use(checkResourceAccess('production-sheets'));
 
 // @route   GET /api/v1/production-sheets
 // @desc    Get all production sheets with pagination and filters
@@ -71,6 +75,7 @@ router.get('/:id',
 // @desc    Create new production sheet
 // @access  Private
 router.post('/', 
+  checkCreatePermission('production-sheets'),
   validateCreateProductionSheet,
   validateMachineAvailability,
   productionSheetController.store
@@ -81,6 +86,7 @@ router.post('/',
 // @access  Private
 router.put('/:id', 
   validateObjectId,
+  checkPrintingRestrictions,
   validateUpdateProductionSheet,
   validateMachineAvailability,
   productionSheetController.update
@@ -91,6 +97,7 @@ router.put('/:id',
 // @access  Private
 router.patch('/:id/stage', 
   validateObjectId,
+  checkPrintingRestrictions,
   validateStageUpdateProductionSheet,
   productionSheetController.updateStage
 );
@@ -100,6 +107,7 @@ router.patch('/:id/stage',
 // @access  Private
 router.patch('/:id/advance-stage', 
   validateObjectId,
+  checkPrintingRestrictions,
   productionSheetController.advanceStage
 );
 

@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const developmentController = require('../controllers/developmentController');
 const { authenticate } = require('../middleware/auth');
+const { checkResourceAccess, checkCreatePermission } = require('../middleware/permissions');
 const { upload } = require('../config/cloudinary'); // Import upload middleware
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 const {
@@ -36,6 +37,9 @@ router.use((req, res, next) => {
 
 // Apply rate limiting to all routes
 router.use(developmentLimiter);
+
+// Apply resource access check to all routes - DEFAULT and ADMIN can access
+router.use(checkResourceAccess('developments'));
 
 // @route   GET /api/v1/developments
 // @desc    Get all developments with pagination and filters
