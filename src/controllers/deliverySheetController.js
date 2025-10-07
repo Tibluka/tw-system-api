@@ -141,7 +141,7 @@ class DeliverySheetController {
       console.error('Error listing delivery sheets:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -182,7 +182,7 @@ class DeliverySheetController {
       if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Delivery sheet not found'
+          message: 'Ficha de entrega não encontrada'
         });
       }
 
@@ -194,7 +194,7 @@ class DeliverySheetController {
       console.error('Error getting delivery sheet:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -209,7 +209,7 @@ class DeliverySheetController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
@@ -221,7 +221,7 @@ class DeliverySheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
@@ -234,7 +234,7 @@ class DeliverySheetController {
       if (existingDeliverySheet) {
         return res.status(409).json({
           success: false,
-          message: 'Delivery sheet already exists for this production sheet',
+          message: 'Ficha de entrega já existe para esta ficha de produção',
           code: ERROR_CODES.DELIVERY_SHEET_ALREADY_EXISTS
         });
       }
@@ -270,7 +270,7 @@ class DeliverySheetController {
 
       res.status(201).json({
         success: true,
-        message: 'Delivery sheet created successfully',
+        message: 'Ficha de entrega criada com sucesso',
         data: deliverySheetWithData
       });
     } catch (error) {
@@ -279,7 +279,7 @@ class DeliverySheetController {
       if (error.name === 'ValidationError') {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Erro de validação',
           code: ERROR_CODES.VALIDATION_ERROR,
           errors: Object.values(error.errors).map(err => ({
             field: err.path,
@@ -291,14 +291,14 @@ class DeliverySheetController {
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Internal reference already exists. Use another value.',
+          message: 'Referência interna já existe. Use outro valor.',
           code: ERROR_CODES.DUPLICATE_ENTRY
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -315,7 +315,7 @@ class DeliverySheetController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
@@ -325,7 +325,7 @@ class DeliverySheetController {
       if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Delivery sheet not found'
+          message: 'Ficha de entrega não encontrada'
         });
       }
 
@@ -350,7 +350,7 @@ class DeliverySheetController {
 
       res.json({
         success: true,
-        message: 'Delivery sheet updated successfully',
+        message: 'Ficha de entrega atualizada com sucesso',
         data: updatedDeliverySheet
       });
     } catch (error) {
@@ -359,7 +359,7 @@ class DeliverySheetController {
       if (error.name === 'ValidationError') {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Erro de validação',
           code: ERROR_CODES.VALIDATION_ERROR,
           errors: Object.values(error.errors).map(err => ({
             field: err.path,
@@ -371,14 +371,14 @@ class DeliverySheetController {
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Internal reference already exists. Use another value.',
+          message: 'Referência interna já existe. Use outro valor.',
           code: ERROR_CODES.DUPLICATE_ENTRY
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -395,7 +395,7 @@ class DeliverySheetController {
       if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Delivery sheet not found'
+          message: 'Ficha de entrega não encontrada'
         });
       }
 
@@ -404,14 +404,14 @@ class DeliverySheetController {
 
       res.json({
         success: true,
-        message: 'Delivery status updated successfully',
+        message: 'Status de entrega atualizado com sucesso',
         data: deliverySheet
       });
     } catch (error) {
       console.error('Error updating delivery status:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -427,7 +427,7 @@ class DeliverySheetController {
       if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Delivery sheet not found'
+          message: 'Ficha de entrega não encontrada'
         });
       }
 
@@ -437,13 +437,13 @@ class DeliverySheetController {
 
       res.json({
         success: true,
-        message: 'Delivery sheet deleted successfully'
+        message: 'Ficha de entrega deletada com sucesso'
       });
     } catch (error) {
       console.error('Error deleting delivery sheet:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'Erro interno do servidor',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });

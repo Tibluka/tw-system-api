@@ -36,7 +36,7 @@ class ProductionReceiptController {
       if (!clientId) {
         return res.status(400).json({
           success: false,
-          message: 'Client ID is required for this filter'
+          message: 'ID do cliente é obrigatório para este filtro'
         });
       }
 
@@ -49,13 +49,13 @@ class ProductionReceiptController {
         if (!clientObjectId) {
           return res.status(400).json({
             success: false,
-            message: 'Invalid client ID format'
+            message: 'Formato de ID do cliente inválido'
           });
         }
       } catch (error) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid client ID format'
+          message: 'Formato de ID do cliente inválido'
         });
       }
 
@@ -222,7 +222,7 @@ class ProductionReceiptController {
       console.error('Error in productionReceipts.indexWithClientFilter:', error);
       res.status(500).json({
         success: false,
-        message: 'Error fetching production receipts with client filter',
+        message: 'Erro ao buscar recibos de produção com filtro de cliente',
         error: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
@@ -469,7 +469,7 @@ class ProductionReceiptController {
       console.error('Error in productionReceipts.index:', error);
       res.status(500).json({
         success: false,
-        message: 'Error fetching production receipts',
+        message: 'Erro ao buscar recibos de produção',
         error: error.message
       });
     }
@@ -487,7 +487,7 @@ class ProductionReceiptController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching statistics',
+        message: 'Erro ao buscar estatísticas',
         error: error.message
       });
     }
@@ -503,7 +503,7 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found for this delivery sheet'
+          message: 'Recibo de produção não encontrado para esta ficha de entrega'
         });
       }
 
@@ -515,13 +515,13 @@ class ProductionReceiptController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid delivery sheet ID'
+          message: 'ID de ficha de entrega inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error fetching production receipt',
+        message: 'Erro ao buscar recibo de produção',
         error: error.message
       });
     }
@@ -543,7 +543,7 @@ class ProductionReceiptController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching overdue receipts',
+        message: 'Erro ao buscar recibos em atraso',
         error: error.message
       });
     }
@@ -595,7 +595,7 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
@@ -607,13 +607,13 @@ class ProductionReceiptController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error fetching production receipt',
+        message: 'Erro ao buscar recibo de produção',
         error: error.message
       });
     }
@@ -627,7 +627,7 @@ class ProductionReceiptController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Validation errors',
+          message: 'Erros de validação',
           code: ERROR_CODES.VALIDATION_ERROR,
           errors: errors.array()
         });
@@ -651,14 +651,14 @@ class ProductionReceiptController {
       if (!deliverySheet) {
         return res.status(404).json({
           success: false,
-          message: 'Delivery sheet not found'
+          message: 'Ficha de entrega não encontrada'
         });
       }
 
       if (deliverySheet.status !== 'DELIVERED') {
         return res.status(400).json({
           success: false,
-          message: 'Receipt can only be created for delivered items'
+          message: 'Recibo só pode ser criado para itens entregues'
         });
       }
 
@@ -673,7 +673,7 @@ class ProductionReceiptController {
       if (existingReceipt) {
         return res.status(400).json({
           success: false,
-          message: 'Production receipt already exists for this delivery sheet',
+          message: 'Recibo de produção já existe para esta ficha de entrega',
           code: ERROR_CODES.PRODUCTION_RECEIPT_ALREADY_EXISTS
         });
       }
@@ -688,19 +688,19 @@ class ProductionReceiptController {
       res.status(201).json({
         success: true,
         data: productionReceipt,
-        message: 'Production receipt created successfully'
+        message: 'Recibo de produção criado com sucesso'
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Production receipt with this internal reference already exists'
+          message: 'Recibo de produção com esta referência interna já existe'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error creating production receipt',
+        message: 'Erro ao criar recibo de produção',
         error: error.message
       });
     }
@@ -713,7 +713,7 @@ class ProductionReceiptController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Validation errors',
+          message: 'Erros de validação',
           errors: errors.array()
         });
       }
@@ -727,7 +727,7 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
@@ -760,13 +760,13 @@ class ProductionReceiptController {
       res.json({
         success: true,
         data: productionReceipt,
-        message: 'Production receipt updated successfully'
+        message: 'Recibo de produção atualizado com sucesso'
       });
     } catch (error) {
       if (error.name === 'ValidationError') {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: 'Erro de validação',
           errors: Object.values(error.errors).map(err => ({
             field: err.path,
             message: err.message
@@ -777,20 +777,20 @@ class ProductionReceiptController {
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
-          message: 'Production receipt with this internal reference already exists'
+          message: 'Recibo de produção com esta referência interna já existe'
         });
       }
 
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating production receipt',
+        message: 'Erro ao atualizar recibo de produção',
         error: error.message
       });
     }
@@ -803,7 +803,7 @@ class ProductionReceiptController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Validation errors',
+          message: 'Erros de validação',
           errors: errors.array()
         });
       }
@@ -816,14 +816,14 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
       if (productionReceipt.paymentStatus === 'PAID') {
         return res.status(400).json({
           success: false,
-          message: 'Payment already completed'
+          message: 'Pagamento já foi concluído'
         });
       }
 
@@ -831,7 +831,7 @@ class ProductionReceiptController {
       if (newPaidAmount > productionReceipt.totalAmount) {
         return res.status(400).json({
           success: false,
-          message: 'Payment amount exceeds remaining balance'
+          message: 'Valor do pagamento excede o saldo restante'
         });
       }
 
@@ -849,7 +849,7 @@ class ProductionReceiptController {
       res.json({
         success: true,
         data: productionReceipt,
-        message: 'Payment processed successfully'
+        message: 'Pagamento processado com sucesso'
       });
     } catch (error) {
       if (error.message.includes('not found')) {
@@ -859,7 +859,7 @@ class ProductionReceiptController {
         });
       }
 
-      if (error.message.includes('already paid') || error.message.includes('exceeds')) {
+      if (error.message.includes('já foi concluído') || error.message.includes('excede')) {
         return res.status(400).json({
           success: false,
           message: error.message
@@ -868,7 +868,7 @@ class ProductionReceiptController {
 
       res.status(500).json({
         success: false,
-        message: 'Error processing payment',
+        message: 'Erro ao processar pagamento',
         error: error.message
       });
     }
@@ -883,7 +883,7 @@ class ProductionReceiptController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Validation errors',
+          message: 'Erros de validação',
           errors: errors.array()
         });
       }
@@ -895,7 +895,7 @@ class ProductionReceiptController {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
@@ -919,7 +919,7 @@ class ProductionReceiptController {
       if (result.matchedCount === 0) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
@@ -944,7 +944,7 @@ class ProductionReceiptController {
       res.json({
         success: true,
         data: productionReceipt,
-        message: 'Payment status updated successfully'
+        message: 'Status do pagamento atualizado com sucesso'
       });
     } catch (error) {
       console.error('Error updating payment status:', error);
@@ -952,13 +952,13 @@ class ProductionReceiptController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating payment status',
+        message: 'Erro ao atualizar status do pagamento',
         error: error.message
       });
     }
@@ -992,26 +992,26 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
       res.json({
         success: true,
         data: productionReceipt,
-        message: 'Production receipt activated successfully'
+        message: 'Recibo de produção ativado com sucesso'
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error activating production receipt',
+        message: 'Erro ao ativar recibo de produção',
         error: error.message
       });
     }
@@ -1031,25 +1031,25 @@ class ProductionReceiptController {
       if (!productionReceipt) {
         return res.status(404).json({
           success: false,
-          message: 'Production receipt not found'
+          message: 'Recibo de produção não encontrado'
         });
       }
 
       res.json({
         success: true,
-        message: 'Production receipt deactivated successfully'
+        message: 'Recibo de produção desativado com sucesso'
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production receipt ID'
+          message: 'ID de recibo de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error deactivating production receipt',
+        message: 'Erro ao desativar recibo de produção',
         error: error.message
       });
     }

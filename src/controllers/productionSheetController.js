@@ -203,7 +203,7 @@ class ProductionSheetController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Erro interno do servidor ao buscar production sheets',
+        message: 'Erro interno do servidor ao buscar fichas de produção',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
@@ -231,7 +231,7 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
@@ -242,7 +242,7 @@ class ProductionSheetController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching production sheet',
+        message: 'Erro ao buscar ficha de produção',
         error: error.message
       });
     }
@@ -256,7 +256,7 @@ class ProductionSheetController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors: errors.array()
         });
       }
@@ -266,7 +266,7 @@ class ProductionSheetController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found'
+          message: 'Ordem de produção não encontrada'
         });
       }
       // Check if production sheet already exists for this production order
@@ -278,7 +278,7 @@ class ProductionSheetController {
       if (existingProductionSheet) {
         return res.status(409).json({
           success: false,
-          message: 'Production sheet already exists for this production order'
+          message: 'Ficha de produção já existe para esta ordem de produção'
         });
       }
 
@@ -321,7 +321,7 @@ class ProductionSheetController {
 
       res.status(201).json({
         success: true,
-        message: 'Production sheet created successfully',
+        message: 'Ficha de produção criada com sucesso',
         data: productionSheetWithData
       });
     } catch (error) {
@@ -333,14 +333,14 @@ class ProductionSheetController {
         
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error creating production sheet',
+        message: 'Erro ao criar ficha de produção',
         error: error.message
       });
     }
@@ -356,7 +356,7 @@ class ProductionSheetController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors: errors.array()
         });
       }
@@ -367,7 +367,7 @@ class ProductionSheetController {
         if (!productionOrder) {
           return res.status(404).json({
             success: false,
-            message: 'Production order not found'
+            message: 'Ordem de produção não encontrada'
           });
         }
       }
@@ -378,7 +378,7 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
@@ -419,14 +419,14 @@ class ProductionSheetController {
 
       res.json({
         success: true,
-        message: 'Production sheet updated successfully',
+        message: 'Ficha de produção atualizada com sucesso',
         data: productionSheet
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
@@ -438,14 +438,14 @@ class ProductionSheetController {
         
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating production sheet',
+        message: 'Erro ao atualizar ficha de produção',
         error: error.message
       });
     }
@@ -460,7 +460,7 @@ class ProductionSheetController {
       if (!stage) {
         return res.status(400).json({
           success: false,
-          message: 'Stage is required'
+          message: 'Etapa é obrigatória'
         });
       }
 
@@ -468,7 +468,7 @@ class ProductionSheetController {
       if (!validStages.includes(stage)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid stage'
+          message: 'Etapa inválida'
         });
       }
 
@@ -481,7 +481,7 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
@@ -508,20 +508,20 @@ class ProductionSheetController {
 
       res.json({
         success: true,
-        message: 'Stage updated successfully',
+        message: 'Etapa atualizada com sucesso',
         data: productionSheet
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating stage',
+        message: 'Erro ao atualizar etapa',
         error: error.message
       });
     }
@@ -536,7 +536,7 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
@@ -544,7 +544,7 @@ class ProductionSheetController {
       if (!advanced) {
         return res.status(400).json({
           success: false,
-          message: 'Production sheet is already at the final stage'
+          message: 'Ficha de produção já está na etapa final'
         });
       }
 
@@ -552,20 +552,20 @@ class ProductionSheetController {
 
       res.json({
         success: true,
-        message: 'Stage advanced successfully',
+        message: 'Etapa avançada com sucesso',
         data: productionSheet
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error advancing stage',
+        message: 'Erro ao avançar etapa',
         error: error.message
       });
     }
@@ -585,26 +585,26 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
       res.json({
         success: true,
-        message: 'Production sheet deactivated successfully',
+        message: 'Ficha de produção desativada com sucesso',
         data: productionSheet
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error deactivating production sheet',
+        message: 'Erro ao desativar ficha de produção',
         error: error.message
       });
     }
@@ -624,26 +624,26 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found'
+          message: 'Ficha de produção não encontrada'
         });
       }
 
       res.json({
         success: true,
-        message: 'Production sheet reactivated successfully',
+        message: 'Ficha de produção reativada com sucesso',
         data: productionSheet
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error reactivating production sheet',
+        message: 'Erro ao reativar ficha de produção',
         error: error.message
       });
     }
@@ -661,7 +661,7 @@ class ProductionSheetController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching statistics',
+        message: 'Erro ao buscar estatísticas',
         error: error.message
       });
     }
@@ -677,7 +677,7 @@ class ProductionSheetController {
       if (!productionSheet) {
         return res.status(404).json({
           success: false,
-          message: 'Production sheet not found for this production order'
+          message: 'Ficha de produção não encontrada para esta ordem de produção'
         });
       }
 
@@ -689,13 +689,13 @@ class ProductionSheetController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid production order ID'
+          message: 'ID de ordem de produção inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error fetching production sheet',
+        message: 'Erro ao buscar ficha de produção',
         error: error.message
       });
     }
@@ -710,7 +710,7 @@ class ProductionSheetController {
       if (![1, 2, 3, 4].includes(machine)) {
         return res.status(400).json({
           success: false,
-          message: 'Machine number must be 1, 2, 3, or 4'
+          message: 'Número da máquina deve ser 1, 2, 3 ou 4'
         });
       }
 
@@ -723,7 +723,7 @@ class ProductionSheetController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching production sheets',
+        message: 'Erro ao buscar fichas de produção',
         error: error.message
       });
     }

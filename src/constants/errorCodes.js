@@ -171,7 +171,7 @@ function getErrorCode(message) {
     return ERROR_CODES.PRODUCTION_ORDER_STATUS_RESTRICTION;
   }
   
-  if (message.includes('Perfil PRINTING só pode alterar os campos')) {
+  if (message.includes('Perfil IMPRESSÃO só pode alterar os campos')) {
     return ERROR_CODES.FIELD_UPDATE_RESTRICTION;
   }
   
@@ -188,23 +188,23 @@ function getErrorCode(message) {
   }
   
   // Códigos padrão baseados em palavras-chave
-  if (message.includes('not found') || message.includes('not exist')) {
+  if (message.includes('não encontrado') || message.includes('not found') || message.includes('not exist')) {
     return ERROR_CODES.RESOURCE_NOT_FOUND;
   }
   
-  if (message.includes('validation') || message.includes('invalid')) {
+  if (message.includes('validação') || message.includes('validation') || message.includes('invalid')) {
     return ERROR_CODES.VALIDATION_ERROR;
   }
   
-  if (message.includes('permission') || message.includes('unauthorized')) {
+  if (message.includes('permissão') || message.includes('permission') || message.includes('unauthorized')) {
     return ERROR_CODES.INSUFFICIENT_PERMISSIONS;
   }
   
-  if (message.includes('duplicate') || message.includes('already exists')) {
+  if (message.includes('duplicado') || message.includes('duplicate') || message.includes('already exists')) {
     return ERROR_CODES.DUPLICATE_ENTRY;
   }
   
-  if (message.includes('database') || message.includes('connection')) {
+  if (message.includes('banco de dados') || message.includes('database') || message.includes('connection')) {
     return ERROR_CODES.DATABASE_ERROR;
   }
 

@@ -184,13 +184,13 @@ const validateAndTransformProductionType = (req, res, next) => {
       if (!productionType.meters || productionType.meters <= 0) {
         return res.status(400).json({
           success: false,
-          message: 'Meters is required for rotary production type'
+          message: 'Metros são obrigatórios para tipo de produção rotativa'
         });
       }
       if (!productionType.fabricType || productionType.fabricType.trim() === '') {
         return res.status(400).json({
           success: false,
-          message: 'Fabric type is required for rotary production type'
+          message: 'Tipo de tecido é obrigatório para tipo de produção rotativa'
         });
       }
     } else if (productionType.type === 'localized') {
@@ -198,7 +198,7 @@ const validateAndTransformProductionType = (req, res, next) => {
       if (!productionType.variants || !Array.isArray(productionType.variants) || productionType.variants.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'At least one variant is required for localized production type'
+          message: 'Pelo menos uma variante é obrigatória para tipo de produção localizada'
         });
       }
 
@@ -235,7 +235,7 @@ const validateAndTransformProductionType = (req, res, next) => {
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: 'Error processing production type',
+      message: 'Erro ao processar tipo de produção',
       error: error.message
     });
   }

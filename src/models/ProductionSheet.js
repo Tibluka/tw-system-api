@@ -37,7 +37,7 @@ const productionSheetSchema = new mongoose.Schema({
       validator: function(v) {
         return [1, 2, 3, 4].includes(v);
       },
-      message: 'Machine must be 1, 2, 3, or 4'
+      message: 'Máquina deve ser 1, 2, 3 ou 4'
     }
   },
 

@@ -19,7 +19,7 @@ const productionOrderLimiter = rateLimit({
   max: 100, // maximum 100 requests per IP
   message: {
     success: false,
-    message: 'Too many requests. Try again in 15 minutes.'
+    message: 'Muitas requisições. Tente novamente em 15 minutos.'
   },
   standardHeaders: true,
   legacyHeaders: false,

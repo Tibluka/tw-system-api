@@ -19,7 +19,7 @@ const productionSheetLimiter = rateLimit({
   max: 150, // maximum 150 requests per IP (mais que outras entidades pois operadores usam muito)
   message: {
     success: false,
-    message: 'Too many requests. Try again in 15 minutes.'
+    message: 'Muitas requisições. Tente novamente em 15 minutos.'
   },
   standardHeaders: true,
   legacyHeaders: false,

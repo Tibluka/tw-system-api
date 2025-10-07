@@ -181,7 +181,7 @@ const validateMachineAvailability = async (req, res, next) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error checking machine availability',
+      message: 'Erro ao verificar disponibilidade da máquina',
       error: error.message
     });
   }

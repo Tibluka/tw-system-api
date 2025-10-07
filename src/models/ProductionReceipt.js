@@ -47,7 +47,7 @@ const productionReceiptSchema = new mongoose.Schema({
       validator: function(v) {
         return v <= this.totalAmount;
       },
-      message: 'Paid amount cannot be greater than total amount'
+      message: 'Valor pago não pode ser maior que o valor total'
     }
   },
 
@@ -80,7 +80,7 @@ const productionReceiptSchema = new mongoose.Schema({
         }
         return true;
       },
-      message: 'Payment date is required when status is PAID'
+      message: 'Data do pagamento é obrigatória quando o status é PAGO'
     }
   },
 

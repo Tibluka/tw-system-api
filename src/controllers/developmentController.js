@@ -95,7 +95,7 @@ async index(req, res) {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor ao buscar developments',
+      message: 'Erro interno do servidor ao buscar desenvolvimentos',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -129,7 +129,7 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
@@ -140,7 +140,7 @@ async index(req, res) {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching development',
+        message: 'Erro ao buscar desenvolvimento',
         error: error.message
       });
     }
@@ -157,7 +157,7 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
@@ -168,7 +168,7 @@ async index(req, res) {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching development',
+        message: 'Erro ao buscar desenvolvimento',
         error: error.message
       });
     }
@@ -181,7 +181,7 @@ async index(req, res) {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors: errors.array()
         });
       }
@@ -191,7 +191,7 @@ async index(req, res) {
       if (!client) {
         return res.status(404).json({
           success: false,
-          message: 'Client not found'
+          message: 'Cliente não encontrado'
         });
       }
   
@@ -205,7 +205,7 @@ async index(req, res) {
   
       res.status(201).json({
         success: true,
-        message: 'Development created successfully',
+        message: 'Desenvolvimento criado com sucesso',
         data: savedDevelopment
       });
   
@@ -220,7 +220,7 @@ async index(req, res) {
   
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
@@ -228,13 +228,13 @@ async index(req, res) {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Internal reference already exists'
+          message: 'Referência interna já existe'
         });
       }
   
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Erro interno do servidor'
       });
     }
   }
@@ -249,7 +249,7 @@ async index(req, res) {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors: errors.array()
         });
       }
@@ -260,7 +260,7 @@ async index(req, res) {
         if (!client) {
           return res.status(404).json({
             success: false,
-            message: 'Client not found'
+            message: 'Cliente não encontrado'
           });
         }
       }
@@ -276,20 +276,20 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       res.json({
         success: true,
-        message: 'Development updated successfully',
+        message: 'Desenvolvimento atualizado com sucesso',
         data: development
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
@@ -301,14 +301,14 @@ async index(req, res) {
         
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating development',
+        message: 'Erro ao atualizar desenvolvimento',
         error: error.message
       });
     }
@@ -323,7 +323,7 @@ async index(req, res) {
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: 'Status é obrigatório'
         });
       }
 
@@ -331,7 +331,7 @@ async index(req, res) {
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid status'
+          message: 'Status inválido'
         });
       }
 
@@ -344,26 +344,26 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       res.json({
         success: true,
-        message: 'Status updated successfully',
+        message: 'Status atualizado com sucesso',
         data: development
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating status',
+        message: 'Erro ao atualizar status',
         error: error.message
       });
     }
@@ -383,26 +383,26 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       res.json({
         success: true,
-        message: 'Development deactivated successfully',
+        message: 'Desenvolvimento desativado com sucesso',
         data: development
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error deactivating development',
+        message: 'Erro ao desativar desenvolvimento',
         error: error.message
       });
     }
@@ -422,26 +422,26 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       res.json({
         success: true,
-        message: 'Development reactivated successfully',
+        message: 'Desenvolvimento reativado com sucesso',
         data: development
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error reactivating development',
+        message: 'Erro ao reativar desenvolvimento',
         error: error.message
       });
     }
@@ -459,7 +459,7 @@ async index(req, res) {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching statistics',
+        message: 'Erro ao buscar estatísticas',
         error: error.message
       });
     }
@@ -492,13 +492,13 @@ async index(req, res) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid client ID'
+          message: 'ID de cliente inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error fetching developments',
+        message: 'Erro ao buscar desenvolvimentos',
         error: error.message
       });
     }
@@ -523,7 +523,7 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development não encontrado'
+          message: 'Desenvolvimento não encontrado'
         });
       }
   
@@ -592,7 +592,7 @@ async index(req, res) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'ID de development inválido'
+          message: 'ID de desenvolvimento inválido'
         });
       }
       
@@ -621,7 +621,7 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development não encontrado'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
@@ -629,7 +629,7 @@ async index(req, res) {
       if (!development.pieceImage || !development.pieceImage.publicId) {
         return res.status(400).json({
           success: false,
-          message: 'Development não possui imagem para remover'
+          message: 'Desenvolvimento não possui imagem para remover'
         });
       }
 
@@ -677,14 +677,14 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development não encontrado'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       if (!development.pieceImage || !development.pieceImage.url) {
         return res.status(404).json({
           success: false,
-          message: 'Development não possui imagem'
+          message: 'Desenvolvimento não possui imagem'
         });
       }
 
@@ -714,7 +714,7 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development não encontrado'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
@@ -722,7 +722,7 @@ async index(req, res) {
       if (!development.pieceImage || !development.pieceImage.publicId) {
         return res.status(400).json({
           success: false,
-          message: 'Development não possui imagem para remover'
+          message: 'Desenvolvimento não possui imagem para remover'
         });
       }
 
@@ -770,14 +770,14 @@ async index(req, res) {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development não encontrado'
+          message: 'Desenvolvimento não encontrado'
         });
       }
 
       if (!development.pieceImage || !development.pieceImage.url) {
         return res.status(404).json({
           success: false,
-          message: 'Development não possui imagem'
+          message: 'Desenvolvimento não possui imagem'
         });
       }
 

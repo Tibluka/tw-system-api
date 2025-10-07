@@ -18,19 +18,19 @@ class AppError extends Error {
 // Tratar erros do Mongoose
 const handleCastErrorDB = (err) => {
   const message = `ID inválido: ${err.value}`;
-  return new AppError(message, 400, true, getErrorCode('Invalid ObjectId'));
+  return new AppError(message, 400, true, getErrorCode('ID de objeto inválido'));
 };
 
 const handleDuplicateFieldsDB = (err) => {
   const value = err.errmsg ? err.errmsg.match(/(["'])(\\?.)*?\1/)[0] : 'campo duplicado';
   const message = `${value} já existe. Use outro valor.`;
-  return new AppError(message, 400, true, getErrorCode('Duplicate entry'));
+  return new AppError(message, 400, true, getErrorCode('Entrada duplicada'));
 };
 
 const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map(el => el.message);
   const message = `Dados inválidos: ${errors.join('. ')}`;
-  return new AppError(message, 400, true, getErrorCode('Validation error'));
+  return new AppError(message, 400, true, getErrorCode('Erro de validação'));
 };
 
 // Tratar erros JWT
@@ -67,7 +67,7 @@ const sendErrorProd = (err, res) => {
     res.status(500).json({
       success: false,
       message: 'Algo deu errado!',
-      code: getErrorCode('Internal server error')
+      code: getErrorCode('Erro interno do servidor')
     });
   }
 };

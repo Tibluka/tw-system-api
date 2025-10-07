@@ -121,7 +121,7 @@ class ProductionOrderController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Erro interno do servidor ao buscar production orders',
+        message: 'Erro interno do servidor ao buscar ordens de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -150,7 +150,7 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found',
+          message: 'Ordem de produção não encontrada',
           code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
@@ -162,7 +162,7 @@ class ProductionOrderController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching production order',
+        message: 'Erro ao buscar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -177,7 +177,7 @@ class ProductionOrderController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
@@ -188,7 +188,7 @@ class ProductionOrderController {
       if (!development) {
         return res.status(404).json({
           success: false,
-          message: 'Development not found',
+          message: 'Desenvolvimento não encontrado',
           code: ERROR_CODES.DEVELOPMENT_NOT_FOUND
         });
       }
@@ -196,7 +196,7 @@ class ProductionOrderController {
       if (development.status !== 'APPROVED') {
         return res.status(400).json({
           success: false,
-          message: 'Development must be approved to create production order',
+          message: 'Desenvolvimento deve estar aprovado para criar ordem de produção',
           code: ERROR_CODES.DEVELOPMENT_NOT_APPROVED
         });
       }
@@ -210,7 +210,7 @@ class ProductionOrderController {
       if (existingProductionOrder) {
         return res.status(409).json({
           success: false,
-          message: 'Production order already exists for this development',
+          message: 'Ordem de produção já existe para este desenvolvimento',
           code: ERROR_CODES.PRODUCTION_ORDER_ALREADY_EXISTS
         });
       }
@@ -223,7 +223,7 @@ class ProductionOrderController {
 
       res.status(201).json({
         success: true,
-        message: 'Production order created successfully',
+        message: 'Ordem de produção criada com sucesso',
         data: productionOrderWithDevelopment
       });
     } catch (error) {
@@ -235,14 +235,14 @@ class ProductionOrderController {
         
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error creating production order',
+        message: 'Erro ao criar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -259,7 +259,7 @@ class ProductionOrderController {
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           code: ERROR_CODES.INVALID_DATA,
           errors: errors.array()
         });
@@ -271,7 +271,7 @@ class ProductionOrderController {
         if (!development) {
           return res.status(404).json({
             success: false,
-            message: 'Development not found',
+            message: 'Desenvolvimento não encontrado',
           code: ERROR_CODES.DEVELOPMENT_NOT_FOUND
           });
         }
@@ -279,7 +279,7 @@ class ProductionOrderController {
         if (development.status !== 'APPROVED') {
           return res.status(400).json({
             success: false,
-            message: 'Development must be approved',
+            message: 'Desenvolvimento deve estar aprovado',
             code: ERROR_CODES.DEVELOPMENT_NOT_APPROVED
           });
         }
@@ -297,21 +297,21 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found',
+          message: 'Ordem de produção não encontrada',
           code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
       res.json({
         success: true,
-        message: 'Production order updated successfully',
+        message: 'Ordem de produção atualizada com sucesso',
         data: productionOrder
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
@@ -323,14 +323,14 @@ class ProductionOrderController {
         
         return res.status(400).json({
           success: false,
-          message: 'Invalid data',
+          message: 'Dados inválidos',
           errors
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating production order',
+        message: 'Erro ao atualizar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -346,7 +346,7 @@ class ProductionOrderController {
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: 'Status é obrigatório'
         });
       }
 
@@ -354,7 +354,7 @@ class ProductionOrderController {
       if (!validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid status'
+          message: 'Status inválido'
         });
       }
 
@@ -367,27 +367,27 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found',
+          message: 'Ordem de produção não encontrada',
           code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
       res.json({
         success: true,
-        message: 'Status updated successfully',
+        message: 'Status atualizado com sucesso',
         data: productionOrder
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error updating status',
+        message: 'Erro ao atualizar status',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -408,27 +408,27 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found',
+          message: 'Ordem de produção não encontrada',
           code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
       res.json({
         success: true,
-        message: 'Production order deactivated successfully',
+        message: 'Ordem de produção desativada com sucesso',
         data: productionOrder
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error deactivating production order',
+        message: 'Erro ao desativar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -449,27 +449,27 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found',
+          message: 'Ordem de produção não encontrada',
           code: ERROR_CODES.PRODUCTION_ORDER_NOT_FOUND
         });
       }
 
       res.json({
         success: true,
-        message: 'Production order reactivated successfully',
+        message: 'Ordem de produção reativada com sucesso',
         data: productionOrder
       });
     } catch (error) {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid ID'
+          message: 'ID inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error reactivating production order',
+        message: 'Erro ao reativar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -488,7 +488,7 @@ class ProductionOrderController {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error fetching statistics',
+        message: 'Erro ao buscar estatísticas',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });
@@ -505,7 +505,7 @@ class ProductionOrderController {
       if (!productionOrder) {
         return res.status(404).json({
           success: false,
-          message: 'Production order not found for this development'
+          message: 'Ordem de produção não encontrada para este desenvolvimento'
         });
       }
 
@@ -517,13 +517,13 @@ class ProductionOrderController {
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
-          message: 'Invalid development ID'
+          message: 'ID de desenvolvimento inválido'
         });
       }
 
       res.status(500).json({
         success: false,
-        message: 'Error fetching production order',
+        message: 'Erro ao buscar ordem de produção',
         code: ERROR_CODES.INTERNAL_SERVER_ERROR,
         error: error.message
       });

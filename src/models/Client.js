@@ -39,7 +39,7 @@ const clientSchema = new mongoose.Schema(
           validator: function (v) {
             return /^[\d\s\(\)\-\+]+$/.test(v);
           },
-          message: 'Formato de phone inválido'
+          message: 'Formato de telefone inválido'
         }
       },
       email: {
