@@ -55,6 +55,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rotas
 app.use('/api/v1', routes);
 
+// Rota temporária para admin (SEM AUTENTICAÇÃO)
+const adminRoutes = require('./routes/admin');
+app.use('/api/v1/admin', adminRoutes);
+
 // Rota de health check
 app.get('/health', (req, res) => {
   res.json({
