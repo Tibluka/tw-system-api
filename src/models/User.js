@@ -69,14 +69,12 @@ userSchema.virtual('isLocked').get(function() {
 });
 
 // Índices (declarados apenas uma vez)
-userSchema.index({ email: 1 }, { unique: true });
+// NOTA: email já tem unique: true no schema, não precisa de index adicional
 userSchema.index({ isActive: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Middleware para hash da senha antes de salvar
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, config.BCRYPT_ROUNDS);
   next();
 });
 

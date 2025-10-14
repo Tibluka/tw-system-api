@@ -142,7 +142,7 @@ clientSchema.methods.getEnderecoCompleto = function () {
 
 // Index para busca otimizada
 clientSchema.index({ companyName: 'text', 'contact.email': 'text' });
-clientSchema.index({ cnpj: 1 });
+// NOTA: cnpj já tem unique: true no schema, não precisa de index adicional
 clientSchema.index({ active: 1 });
 
 module.exports = mongoose.model('Client', clientSchema);

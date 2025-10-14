@@ -226,7 +226,7 @@ developmentSchema.statics.getStatistics = async function() {
 };
 
 // Indexes for optimized search - ATUALIZADO
-developmentSchema.index({ internalReference: 1 });
+// NOTA: internalReference já tem unique: true no schema, não precisa de index adicional
 developmentSchema.index({ clientId: 1 });
 developmentSchema.index({ status: 1 });
 developmentSchema.index({ 'productionType.type': 1 }); // MUDANÇA: agora indexa productionType.type

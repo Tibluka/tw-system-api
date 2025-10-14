@@ -52,12 +52,8 @@ router.post('/update-passwords', async (req, res, next) => {
         const newPassword = generateRandomPassword(6);
         console.log(`🔑 Nova senha gerada para ${email}: ${newPassword}`);
         
-        // Hash da senha
-        const salt = await bcrypt.genSalt(12);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Atualizar a senha
-        user.password = hashedPassword;
+        // Atualizar a senha (o middleware pre('save') fará o hash automaticamente)
+        user.password = newPassword;
         user.passwordChangedAt = new Date();
         
         await user.save();
@@ -146,6 +142,92 @@ router.post('/check-user', async (req, res, next) => {
     console.error('❌ Erro ao verificar usuário:', error);
     return next(new AppError(
       'Erro interno do servidor',
+      500,
+      true,
+      ERROR_CODES.INTERNAL_SERVER_ERROR
+    ));
+  }
+});
+
+// @route   POST /api/v1/admin/update-user-password
+// @desc    Atualizar senha de um usuário específico
+// @access  Public (temporário)
+router.post('/update-user-password', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    console.log('🔧 Atualizando senha do usuário:', email);
+
+    // Validações
+    if (!email) {
+      return next(new AppError(
+        'Email é obrigatório',
+        400,
+        true,
+        ERROR_CODES.MISSING_REQUIRED_FIELD
+      ));
+    }
+
+    if (!password) {
+      return next(new AppError(
+        'Senha é obrigatória',
+        400,
+        true,
+        ERROR_CODES.MISSING_REQUIRED_FIELD
+      ));
+    }
+
+    if (password.length < 6) {
+      return next(new AppError(
+        'Senha deve ter pelo menos 6 caracteres',
+        400,
+        true,
+        ERROR_CODES.INVALID_PASSWORD_FORMAT
+      ));
+    }
+
+    // Buscar o usuário
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return next(new AppError(
+        'Usuário não encontrado',
+        404,
+        true,
+        ERROR_CODES.USER_NOT_FOUND
+      ));
+    }
+
+    console.log(`👤 Usuário encontrado: ${user.name} (${user.role})`);
+    console.log(`🔑 Atualizando senha...`);
+
+    // Hash da senha
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Atualizar a senha
+    user.password = hashedPassword;
+    console.log(hashedPassword);
+    
+    await user.save();
+
+    console.log(`✅ Senha atualizada com sucesso para: ${email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Senha atualizada com sucesso',
+      data: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        passwordChangedAt: user.passwordChangedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao atualizar senha:', error);
+    return next(new AppError(
+      'Erro interno do servidor ao atualizar senha',
       500,
       true,
       ERROR_CODES.INTERNAL_SERVER_ERROR

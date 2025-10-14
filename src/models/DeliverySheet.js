@@ -119,7 +119,7 @@ const deliverySheetSchema = new mongoose.Schema({
 // });
 
 // ÍNDICES
-deliverySheetSchema.index({ internalReference: 1 });
+// NOTA: internalReference já tem unique: true no schema, não precisa de index adicional
 deliverySheetSchema.index({ productionSheetId: 1 });
 deliverySheetSchema.index({ deliveryDate: 1 });
 deliverySheetSchema.index({ status: 1 });
