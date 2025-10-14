@@ -75,6 +75,7 @@ userSchema.index({ createdAt: -1 });
 
 // Middleware para hash da senha antes de salvar
 userSchema.pre('save', async function(next) {
+
   next();
 });
 
